@@ -2109,23 +2109,19 @@
 
       async function compressFile(file, quality) {
         const w = await loadPngWasm();
-        const canvas = document.createElement('canvas');
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = url; });
-        URL.revokeObjectURL(url);
-        canvas.width = img.width; canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, img.width, img.height);
-        const maxColors = Math.max(2, Math.floor(256 * (quality / 100)));
-        const quantizer = new w.ImageQuantizer({ wasmModule: w });
-        const quantized = await quantizer.quantizeImageData(imageData, {
-          maxColors,
-          speed: 1,
-          quality: { min: 0, target: quality }
-        });
-        return new Blob([quantized.pngBytes], { type: 'image/png' });
+        const pngBuffer = new Uint8Array(await file.arrayBuffer());
+        const decoded = w.decode_png_to_rgba(pngBuffer);
+        const [rgbaData, width, height] = decoded;
+        const q = new w.ImageQuantizer();
+        q.setQuality(0, 100);
+        q.setSpeed(3);
+        q.setMaxColors(Math.max(2, Math.floor(256 * (quality / 100))));
+        const qr = q.quantizeImage(rgbaData, width, height);
+        qr.setDithering(1.0);
+        const palette = qr.getPalette();
+        const indices = qr.getPaletteIndices(rgbaData, width, height);
+        const png = w.encode_palette_to_png(indices, palette, width, height);
+        return new Blob([png], { type: 'image/png' });
       }
 
       function fmtSize(b) {
