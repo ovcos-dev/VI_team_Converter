@@ -2101,7 +2101,7 @@
         const blob = new Blob([jsText], { type: 'application/javascript' });
         const blobUrl = URL.createObjectURL(blob);
         const mod = await import(blobUrl);
-        await mod.default(wasmBuf);
+        await mod.default({ module_or_path: new Uint8Array(wasmBuf) });
         pngWasm = mod;
         setStatus('');
         return pngWasm;
