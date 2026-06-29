@@ -2107,7 +2107,7 @@
         return pngWasm;
       }
 
-      async function compressFile(file, quality) async function compressFile(file, quality) {
+      async function compressFile(file, quality) {
         const w = await loadPngWasm();
         const img = new Image();
         const url = URL.createObjectURL(file);
