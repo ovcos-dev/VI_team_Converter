@@ -1067,6 +1067,14 @@
           <input type="file" id="png-fileInput" accept="image/png" multiple hidden>
         </div>
         <div class="card">
+          <div class="card" style="margin-bottom:12px">
+            <div class="card-label">파일명 설정</div>
+            <div class="icard">
+              <span class="lbl">suffix (기본값: 없음)</span>
+              <input type="text" id="png-suffix" placeholder="예: _compressed, _small"
+                style="background:transparent;border:none;outline:none;font-size:15px;font-weight:600;color:var(--text);width:100%">
+            </div>
+          </div>
           <div class="card-label">압축 품질</div>
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
             <input type="range" id="png-slider" min="1" max="100" value="80" style="flex:1;accent-color:var(--accent)">
@@ -2183,7 +2191,8 @@
         if (!r?.blob) return;
         const a = document.createElement('a');
         a.href = URL.createObjectURL(r.blob);
-        a.download = r.name.replace('.png', '_compressed.png');
+        const suffix = document.getElementById('png-suffix')?.value || '';
+        a.download = r.name.replace('.png', suffix + '.png');
         a.click();
       };
 
@@ -2191,7 +2200,8 @@
         pngResults.filter(r => r.blob).forEach(r => {
           const a = document.createElement('a');
           a.href = URL.createObjectURL(r.blob);
-          a.download = r.name.replace('.png', '_compressed.png');
+          const suffix = document.getElementById('png-suffix')?.value || '';
+          a.download = r.name.replace('.png', suffix + '.png');
           a.click();
         });
       };
@@ -2303,7 +2313,7 @@
               const blob = await compressFile(file, getQuality());
               pngResults.push({ name: file.name, origSize: file.size, newSize: blob.size, blob });
             } catch (e) {
-              console.error('압축 실패:', e);
+
               pngResults.push({ name: file.name, error: true });
             }
             renderResults();
