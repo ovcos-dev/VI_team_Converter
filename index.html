@@ -2228,9 +2228,31 @@
         if (selectAll) {
           selectAll.checked = true;
           selectAll.onchange = () => {
+            el.querySelectorAll('.png-chk').forEach(chk => chk.checked = selectAll.checked);
+          };
+        }
+        const clearBtn = document.getElementById('png-clearBtn');
+        if (clearBtn) {
+          clearBtn.onclick = () => {
+            const indices = [...el.querySelectorAll('.png-chk:checked')]
+              .map(c => parseInt(c.dataset.idx)).sort((a, b) => b - a);
+            indices.forEach(i => pngFiles.splice(i, 1));
+            renderFileList();
+            updateCompressBtn();
+          };
+        }
+      }
 
-            // 슬라이더 동기화
-            window.addEventListener('DOMContentLoaded', () => {
+      function updateCompressBtn() {
+        const btn = document.getElementById('png-compress-btn');
+        if (!btn) return;
+        btn.disabled = pngFiles.length === 0;
+        btn.style.opacity = pngFiles.length ? '1' : '0.5';
+        btn.textContent = pngFiles.length ? `압축 시작 (${pngFiles.length}개)` : '압축 시작';
+      }
+
+      // 슬라이더 동기화
+      window.addEventListener('DOMContentLoaded', () => {
               const dz = document.getElementById('png-dropzone');
               const fi = document.getElementById('png-fileInput');
               const slider = document.getElementById('png-slider');
@@ -2266,10 +2288,11 @@
                 btn.disabled = true; btn.style.opacity = '0.5';
                 pngResults = []; renderResults();
                 document.getElementById('png-listArea').style.display = 'none';
+                const filesToCompress = [...pngFiles];
                 pngFiles = [];
-                for (let i = 0; i < pngFiles.length; i++) {
-                  const file = pngFiles[i];
-                  setStatus(`압축 중... (${i + 1}/${pngFiles.length})`);
+                for (let i = 0; i < filesToCompress.length; i++) {
+                  const file = filesToCompress[i];
+                  setStatus(`압축 중... (${i + 1}/${filesToCompress.length})`);
                   try {
                     const blob = await compressFile(file, getQuality());
                     pngResults.push({ name: file.name, origSize: file.size, newSize: blob.size, blob });
@@ -2293,11 +2316,10 @@
                   });
                   document.getElementById('png-status').after(dlAll);
                 }
-                pngFiles = [];
                 btn.textContent = '압축 시작';
               });
-            });
-          }) ();
+      });
+    }) ();
 
   </script>
 </body>
