@@ -1197,10 +1197,7 @@
         const h = getStorage('vi_tab_hidden');
         if (o) tabOrder = JSON.parse(o);
         if (h) hiddenTabs = JSON.parse(h);
-      } catch (e) {
-        console.error('압축 실패:', e);
-        pngResults.push({ name: file.name, error: true });
-      }
+      } catch (e) { }
     }
 
     function renderNav() {
@@ -2297,6 +2294,7 @@
               const blob = await compressFile(file, getQuality());
               pngResults.push({ name: file.name, origSize: file.size, newSize: blob.size, blob });
             } catch (e) {
+              console.error('압축 실패:', e);
               pngResults.push({ name: file.name, error: true });
             }
             renderResults();
