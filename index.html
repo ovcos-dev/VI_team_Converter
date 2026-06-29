@@ -2118,54 +2118,19 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const imageData = ctx.getImageData(0, 0, img.width, img.height);
-        const rgba = imageData.data;
         const width = img.width;
         const height = img.height;
-
-        // 알파 채널 별도 저장 후 RGB만 불투명하게 처리
-        const alphaChannel = new Uint8Array(width * height);
-        const rgbaOpaque = new Uint8ClampedArray(rgba.length);
-        for (let i = 0; i < width * height; i++) {
-          alphaChannel[i] = rgba[i * 4 + 3];
-          rgbaOpaque[i * 4 + 0] = rgba[i * 4 + 0];
-          rgbaOpaque[i * 4 + 1] = rgba[i * 4 + 1];
-          rgbaOpaque[i * 4 + 2] = rgba[i * 4 + 2];
-          rgbaOpaque[i * 4 + 3] = 255; // 알파를 불투명으로
-        }
-
-        // RGB 압축
         const q = new w.ImageQuantizer();
         q.setQuality(0, 100);
         q.setSpeed(3);
         q.setMaxColors(Math.max(2, Math.floor(256 * (quality / 100))));
-        const qr = q.quantizeImage(rgbaOpaque, width, height);
+        const qr = q.quantizeImage(imageData.data, width, height);
         qr.setDithering(1.0);
         const palette = qr.getPalette();
-        const indices = qr.getPaletteIndices(rgbaOpaque, width, height);
-
-        // 압축된 팔레트 색상에 원본 알파 복원
-        const paletteWithAlpha = new Uint8ClampedArray(palette.length);
-        paletteWithAlpha.set(palette);
-
-        // 최종 PNG 인코딩
+        const indices = qr.getPaletteIndices(imageData.data, width, height);
         const png = w.encode_palette_to_png(indices, palette, width, height);
-
-        // 원본 알파 채널을 복원한 새 PNG 생성 (Canvas 이용)
-        const outCanvas = document.createElement('canvas');
-        outCanvas.width = width; outCanvas.height = height;
-        const outCtx = outCanvas.getContext('2d');
-        const compressedImg = new Image();
-        const compBlob = new Blob([png], { type: 'image/png' });
-        const compUrl = URL.createObjectURL(compBlob);
-        await new Promise((resolve, reject) => { compressedImg.onload = resolve; compressedImg.onerror = reject; compressedImg.src = compUrl; });
-        URL.revokeObjectURL(compUrl);
-        outCtx.drawImage(compressedImg, 0, 0);
-        const outData = outCtx.getImageData(0, 0, width, height);
-        for (let i = 0; i < width * height; i++) {
-          outData.data[i * 4 + 3] = alphaChannel[i];
-        }
-        outCtx.putImageData(outData, 0, 0);
-        return new Promise(resolve => outCanvas.toBlob(resolve, 'image/png'));
+        const compressed = new Blob([png], { type: 'image/png' });
+        return compressed.size < file.size ? compressed : file;
       }
 
       function fmtSize(b) {
@@ -2201,7 +2166,7 @@
             ${r.error
             ? `<span style="grid-column:span 3;color:#ef4444">압축 실패</span>`
             : `<span style="color:var(--text3)">${fmtSize(r.origSize)} → ${fmtSize(r.newSize)}</span>
-                 <span style="color:#10b981;font-weight:600">-${((r.origSize - r.newSize) / r.origSize * 100).toFixed(1)}%</span>
+                 <span style="color:${r.newSize < r.origSize ? '#10b981' : '#ef4444'};font-weight:600">${r.newSize < r.origSize ? '-' : '+'}${Math.abs(((r.origSize - r.newSize) / r.origSize * 100)).toFixed(1)}%</span>
                  <button onclick="pngDownload(${i})" style="padding:4px 8px;font-size:11px;font-weight:600;background:var(--accent-bg);color:var(--accent);border:none;border-radius:6px;cursor:pointer">저장</button>`
           }
           </div>
@@ -2344,21 +2309,10 @@
             renderResults();
           }
           setStatus(`완료! ${pngResults.filter(r => !r.error).length}개 압축됨`);
-          // 전체 다운로드 버튼
-          const doneFiles = pngResults.filter(r => r.blob);
-          if (doneFiles.length > 1) {
-            const dlAll = document.createElement('button');
-            dlAll.style.cssText = 'width:100%;padding:10px;margin-top:8px;border-radius:var(--radius-md);border:none;background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;font-size:13px;font-weight:600;cursor:pointer';
-            dlAll.textContent = `전체 다운로드 (${doneFiles.length}개)`;
-            dlAll.onclick = () => doneFiles.forEach(r => {
-              const a = document.createElement('a');
-              a.href = URL.createObjectURL(r.blob);
-              a.download = r.name.replace('.png', '_compressed.png');
-              a.click();
-            });
-            document.getElementById('png-status').after(dlAll);
-          }
           btn.textContent = '압축 시작';
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          renderResults();
         });
       });
     })();
