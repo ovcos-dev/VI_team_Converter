@@ -1,1532 +1,2156 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VI Team Converter</title>
-<style>
-  :root {
-    --bg: #0f0f12;
-    --bg2: #1a1a20;
-    --bg3: #222228;
-    --bg4: #2c2c35;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.13);
-    --text: #f0f0f4;
-    --text2: #9191a0;
-    --text3: #5a5a6e;
-    --accent: #4f8eff;
-    --accent-bg: rgba(79,142,255,0.12);
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --mono: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  code { font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif; }
-  body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif; font-size: 14px; min-height: 100vh; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VI Team Converter</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --bg2: #1a1a20;
+      --bg3: #222228;
+      --bg4: #2c2c35;
+      --border: rgba(255, 255, 255, 0.07);
+      --border2: rgba(255, 255, 255, 0.13);
+      --text: #f0f0f4;
+      --text2: #9191a0;
+      --text3: #5a5a6e;
+      --accent: #4f8eff;
+      --accent-bg: rgba(79, 142, 255, 0.12);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --mono: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    }
 
-  .app { display: flex; height: 100vh; overflow: hidden; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  /* Sidebar */
-  .sidebar { width: 200px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; }
-  .sidebar-title { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 8px; }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text2); font-size: 13px; font-weight: 500; transition: all .15s; border: none; background: none; width: 100%; text-align: left; }
-  .nav-item:hover { background: var(--bg3); color: var(--text); }
-  .nav-item.active { background: var(--accent-bg); color: var(--accent); }
-  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    code {
+      font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    }
 
-  /* Main */
-  .main { flex: 1; overflow-y: auto; padding: 32px; }
-  .panel { display: none; max-width: 640px; }
-  .panel.active { display: block; }
-  .panel-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 24px; letter-spacing: -.02em; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
 
-  /* Cards */
-  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 12px; }
-  .card:last-child { margin-bottom: 0; }
-  .card-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+    .app {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
 
-  /* Input/Result cards */
-  .expr { display: flex; align-items: stretch; gap: 8px; flex-wrap: nowrap; }
-  .icard { display: flex; flex-direction: column; gap: 4px; background: var(--bg3); border-radius: var(--radius-sm); padding: 8px 12px; flex: 1; min-width: 0; border: 1px solid var(--border); transition: border-color .15s; }
-  .icard:focus-within { border-color: var(--accent); }
-  .icard .lbl { font-size: 10px; color: var(--text3); font-weight: 500; }
-  .icard input, .icard select { background: transparent; border: none; outline: none; font-size: 15px; font-weight: 600; color: var(--text); width: 100%; padding: 0; font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif; }
-  #hex-in { font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif !important; }
-  #ae-val { font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif !important; }
-  .icard select option { background: var(--bg3); }
-  .rcard { display: flex; flex-direction: column; gap: 4px; background: var(--bg3); border-radius: var(--radius-sm); padding: 8px 12px; flex: 1; min-width: 0; border: 1px solid var(--border); }
-  .rcard .lbl { font-size: 10px; color: var(--text3); font-weight: 500; }
-  .rcard .val { font-size: 15px; font-weight: 600; color: var(--text); }
-  .rcard-row { display: flex; align-items: center; gap: 8px; }
-  .rcard code { font-size: 13px; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    /* Sidebar */
+    .sidebar {
+      width: 200px;
+      flex-shrink: 0;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      padding: 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
-  /* Toggle card */
-  .ccard { display: flex; flex-direction: column; gap: 6px; background: var(--bg3); border-radius: var(--radius-sm); padding: 8px 12px; align-items: center; justify-content: center; cursor: pointer; min-width: 64px; flex-shrink: 0; border: 1px solid var(--border); transition: all .15s; user-select: none; }
-  .ccard.on { border-color: var(--accent); background: var(--accent-bg); }
-  .ccard .lbl { font-size: 10px; color: var(--text3); font-weight: 500; }
-  .ccard.on .lbl { color: var(--accent); }
-  .chk-box { width: 18px; height: 18px; border: 1.5px solid var(--border2); border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--accent); transition: all .15s; }
-  .ccard.on .chk-box { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 0 8px;
+      margin-bottom: 8px;
+    }
 
-  /* Copy button */
-  .copy-btn { font-size: 11px; padding: 4px 10px; border: 1px solid var(--border2); border-radius: 6px; background: transparent; color: var(--text2); cursor: pointer; flex-shrink: 0; transition: all .15s; }
-  .copy-btn:hover { background: var(--bg4); color: var(--text); }
-  .copy-btn.copied { border-color: var(--accent); color: var(--accent); }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
 
-  /* Result big (퇴근시간) */
-  .result-big { text-align: center; padding: 24px; background: var(--bg3); border-radius: var(--radius-md); margin-bottom: 12px; border: 1px solid var(--border); }
-  .result-big .time { font-size: 48px; font-weight: 800; letter-spacing: -.04em; color: var(--text); }
-  .result-big .sub { font-size: 12px; color: var(--text3); margin-top: 6px; }
-  .wit { font-size: 13px; color: var(--text3); line-height: 1.7; padding: 10px 14px; border-left: 2px solid var(--bg4); }
+    .nav-item:hover {
+      background: var(--bg3);
+      color: var(--text);
+    }
 
-  /* Table */
-  .tbl-wrap { border-radius: var(--radius-sm); border: 1px solid var(--border); }
-  table.ref { width: 100%; font-size: 12px; border-collapse: collapse; table-layout: fixed; }
-  table.ref th { text-align: right; padding: 6px 10px; font-size: 10px; color: var(--text3); border-bottom: 1px solid var(--border); font-weight: 600; background: var(--bg2); text-transform: uppercase; letter-spacing: .04em; }
-  table.ref th:first-child { text-align: center; }
-  table.ref td { padding: 5px 10px; border-bottom: 1px solid var(--border); text-align: right; color: var(--text2); font-size: 12px; }
-  table.ref td:first-child { text-align: center; color: var(--text3); }
-  table.ref tr:last-child td { border-bottom: none; }
-  table.ref tr:hover td { background: var(--bg3); color: var(--text); }
+    .nav-item.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
 
-  /* Units grid */
-  .units-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .unit-row { display: flex; align-items: center; gap: 8px; background: var(--bg3); border-radius: var(--radius-sm); padding: 8px 12px; cursor: pointer; border: 1px solid var(--border); transition: all .15s; }
-  .unit-row.active { border-color: var(--accent); background: var(--accent-bg); }
-  .unit-label { font-size: 11px; color: var(--text3); width: 32px; flex-shrink: 0; font-weight: 600; }
-  .unit-row.active .unit-label { color: var(--accent); }
-  .unit-input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; font-size: 15px; font-weight: 600; color: var(--text); font-family: inherit; width: 100%; }
-  .unit-name { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+    .nav-item .icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
 
-  /* Divider */
-  .divider { height: 1px; background: var(--border); margin: 16px 0; }
-  .section-lbl { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+    /* Main */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+    }
 
-  /* Color preview */
-  #color-preview { width: 36px; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border); flex-shrink: 0; }
+    .panel {
+      display: none;
+      max-width: 640px;
+    }
 
-  /* Scrollbar global */
-  .main::-webkit-scrollbar { width: 4px; } .main::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 4px; }
+    .panel.active {
+      display: block;
+    }
 
-  input[type=number]::-webkit-inner-spin-button,
-  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-  input[type=number] { -moz-appearance: textfield; }
-  .num-wrap { display: flex; align-items: stretch; gap: 0; flex: 1; min-width: 0; }
-  .num-wrap input[type=number] { flex: 1; min-width: 0; }
-  .spin-btns { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; margin-left: 4px; }
-  .spin-btn { width: 20px; height: 50%; min-height: 14px; background: var(--bg4); border: none; border-radius: 4px; cursor: pointer; color: var(--text3); font-size: 8px; display: flex; align-items: center; justify-content: center; transition: all .15s; padding: 0; line-height: 1; flex: 1; }
-  .spin-btn:hover { background: var(--border2); color: var(--text); }
-  .spin-btn:active { background: var(--accent); color: #fff; }
-  input::placeholder { color: var(--text3); font-size: 11px; }
+    .panel-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 24px;
+      letter-spacing: -.02em;
+    }
 
-  /* Sidebar edit mode */
-  .sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 4px; }
-  .sidebar-title { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; padding: 0; margin-bottom: 0; }
-  .edit-btn { font-size: 11px; padding: 3px 8px; border: 1px solid var(--border2); border-radius: 6px; background: transparent; color: var(--text3); cursor: pointer; transition: all .15s; white-space: nowrap; }
-  .edit-btn:hover { background: var(--bg3); color: var(--text); }
-  .edit-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text2); font-size: 13px; font-weight: 500; transition: all .15s; border: none; background: none; width: 100%; text-align: left; }
-  .nav-item:hover { background: var(--bg3); color: var(--text); }
-  .nav-item.active { background: var(--accent-bg); color: var(--accent); }
-  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
-  .nav-item.hidden-tab { display: none; }
-  .nav-item.edit-mode { cursor: grab; padding: 7px 8px; gap: 6px; }
-  .nav-item.edit-mode:active { cursor: grabbing; }
-  .nav-item.drag-over { border: 1px dashed var(--accent); background: var(--accent-bg); }
-  .nav-item.dragging { opacity: 0.4; }
-  .toggle-btn { margin-left: auto; width: 28px; height: 16px; border-radius: 8px; background: var(--bg4); border: none; cursor: pointer; position: relative; flex-shrink: 0; transition: background .2s; }
-  .toggle-btn.on { background: var(--accent); }
-  .toggle-btn::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left .2s; }
-  .toggle-btn.on::after { left: 14px; }
-  .drag-handle { color: var(--text3); font-size: 12px; flex-shrink: 0; cursor: grab; }
-</style>
+    /* Cards */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+    }
+
+    .card:last-child {
+      margin-bottom: 0;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 14px;
+    }
+
+    /* Input/Result cards */
+    .expr {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+
+    .icard {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--border);
+      transition: border-color .15s;
+    }
+
+    .icard:focus-within {
+      border-color: var(--accent);
+    }
+
+    .icard .lbl {
+      font-size: 10px;
+      color: var(--text3);
+      font-weight: 500;
+    }
+
+    .icard input,
+    .icard select {
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      width: 100%;
+      padding: 0;
+      font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    }
+
+    #hex-in {
+      font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif !important;
+    }
+
+    #ae-val {
+      font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif !important;
+    }
+
+    .icard select option {
+      background: var(--bg3);
+    }
+
+    .rcard {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--border);
+    }
+
+    .rcard .lbl {
+      font-size: 10px;
+      color: var(--text3);
+      font-weight: 500;
+    }
+
+    .rcard .val {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .rcard-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rcard code {
+      font-size: 13px;
+      font-weight: 500;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+    }
+
+    /* Toggle card */
+    .ccard {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      min-width: 64px;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      transition: all .15s;
+      user-select: none;
+    }
+
+    .ccard.on {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .ccard .lbl {
+      font-size: 10px;
+      color: var(--text3);
+      font-weight: 500;
+    }
+
+    .ccard.on .lbl {
+      color: var(--accent);
+    }
+
+    .chk-box {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--border2);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--accent);
+      transition: all .15s;
+    }
+
+    .ccard.on .chk-box {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Copy button */
+    .copy-btn {
+      font-size: 11px;
+      padding: 4px 10px;
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all .15s;
+    }
+
+    .copy-btn:hover {
+      background: var(--bg4);
+      color: var(--text);
+    }
+
+    .copy-btn.copied {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Result big (퇴근시간) */
+    .result-big {
+      text-align: center;
+      padding: 24px;
+      background: var(--bg3);
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .result-big .time {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -.04em;
+      color: var(--text);
+    }
+
+    .result-big .sub {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 6px;
+    }
+
+    .wit {
+      font-size: 13px;
+      color: var(--text3);
+      line-height: 1.7;
+      padding: 10px 14px;
+      border-left: 2px solid var(--bg4);
+    }
+
+    /* Table */
+    .tbl-wrap {
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    table.ref {
+      width: 100%;
+      font-size: 12px;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    table.ref th {
+      text-align: right;
+      padding: 6px 10px;
+      font-size: 10px;
+      color: var(--text3);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      background: var(--bg2);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    table.ref th:first-child {
+      text-align: center;
+    }
+
+    table.ref td {
+      padding: 5px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+      color: var(--text2);
+      font-size: 12px;
+    }
+
+    table.ref td:first-child {
+      text-align: center;
+      color: var(--text3);
+    }
+
+    table.ref tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.ref tr:hover td {
+      background: var(--bg3);
+      color: var(--text);
+    }
+
+    /* Units grid */
+    .units-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .unit-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: all .15s;
+    }
+
+    .unit-row.active {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .unit-label {
+      font-size: 11px;
+      color: var(--text3);
+      width: 32px;
+      flex-shrink: 0;
+      font-weight: 600;
+    }
+
+    .unit-row.active .unit-label {
+      color: var(--accent);
+    }
+
+    .unit-input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      font-family: inherit;
+      width: 100%;
+    }
+
+    .unit-name {
+      font-size: 10px;
+      color: var(--text3);
+      flex-shrink: 0;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    .section-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 10px;
+    }
+
+    /* Color preview */
+    #color-preview {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    /* Scrollbar global */
+    .main::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .main::-webkit-scrollbar-thumb {
+      background: var(--bg4);
+      border-radius: 4px;
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    .num-wrap {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .num-wrap input[type=number] {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .spin-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      flex-shrink: 0;
+      margin-left: 4px;
+    }
+
+    .spin-btn {
+      width: 20px;
+      height: 50%;
+      min-height: 14px;
+      background: var(--bg4);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text3);
+      font-size: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+      padding: 0;
+      line-height: 1;
+      flex: 1;
+    }
+
+    .spin-btn:hover {
+      background: var(--border2);
+      color: var(--text);
+    }
+
+    .spin-btn:active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    input::placeholder {
+      color: var(--text3);
+      font-size: 11px;
+    }
+
+    /* Sidebar edit mode */
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 0;
+      margin-bottom: 0;
+    }
+
+    .edit-btn {
+      font-size: 11px;
+      padding: 3px 8px;
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text3);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+
+    .edit-btn:hover {
+      background: var(--bg3);
+      color: var(--text);
+    }
+
+    .edit-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover {
+      background: var(--bg3);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .nav-item .icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .nav-item.hidden-tab {
+      display: none;
+    }
+
+    .nav-item.edit-mode {
+      cursor: grab;
+      padding: 7px 8px;
+      gap: 6px;
+    }
+
+    .nav-item.edit-mode:active {
+      cursor: grabbing;
+    }
+
+    .nav-item.drag-over {
+      border: 1px dashed var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .nav-item.dragging {
+      opacity: 0.4;
+    }
+
+    .toggle-btn {
+      margin-left: auto;
+      width: 28px;
+      height: 16px;
+      border-radius: 8px;
+      background: var(--bg4);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: background .2s;
+    }
+
+    .toggle-btn.on {
+      background: var(--accent);
+    }
+
+    .toggle-btn::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      transition: left .2s;
+    }
+
+    .toggle-btn.on::after {
+      left: 14px;
+    }
+
+    .drag-handle {
+      color: var(--text3);
+      font-size: 12px;
+      flex-shrink: 0;
+      cursor: grab;
+    }
+  </style>
 </head>
+
 <body>
-<div class="app">
+  <div class="app">
 
-  <!-- Sidebar -->
-  <nav class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-title">VI Team Converter</div>
-      <button class="edit-btn" id="edit-btn" onclick="toggleEditMode()">편집</button>
-    </div>
-    <div id="nav-list"></div>
-    <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border)">
-      <button onclick="resetStorage()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:12px;cursor:pointer;transition:all .15s" onmouseover="this.style.background='var(--bg3)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--text3)'">기본값으로 초기화</button>
-    </div>
-  </nav>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">VI Team Converter</div>
+        <button class="edit-btn" id="edit-btn" onclick="toggleEditMode()">편집</button>
+      </div>
+      <div id="nav-list"></div>
+      <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border)">
+        <button onclick="resetStorage()"
+          style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:12px;cursor:pointer;transition:all .15s"
+          onmouseover="this.style.background='var(--bg3)';this.style.color='var(--text)'"
+          onmouseout="this.style.background='transparent';this.style.color='var(--text3)'">기본값으로 초기화</button>
+      </div>
+    </nav>
 
-  <!-- Main -->
-  <main class="main">
+    <!-- Main -->
+    <main class="main">
 
-    <!-- 프레임 변환 -->
-    <div class="panel" id="panel-frame">
-      <div class="panel-title">프레임 변환</div>
-      <div class="card">
-        <div class="card-label">fps 설정</div>
-        <div class="expr">
-          <div class="icard">
-            <span class="lbl">프레임레이트</span>
-            <select id="fps-sel" onchange="onFpsChange()">
-              <option value="60">60 fps</option>
-              <option value="30">30 fps</option>
-              <option value="24">24 fps</option>
-            </select>
-          </div>
-        </div>
-        <div style="margin-top:10px">
-          <div class="units-grid" style="grid-template-columns:1fr 1fr 1fr">
-            <div class="unit-row active" data-unit="frame" onclick="selectFrameUnit('frame')">
-              <span class="unit-label">frame</span>
-              <input class="unit-input" id="val-frame" type="number" value="1" min="0" oninput="onFrameInput('frame')">
-            </div>
-            <div class="unit-row" data-unit="msec" onclick="selectFrameUnit('msec')">
-              <span class="unit-label">msec</span>
-              <input class="unit-input" id="val-msec" type="number" min="0" oninput="onFrameInput('msec')">
-            </div>
-            <div class="unit-row" data-unit="sec" onclick="selectFrameUnit('sec')">
-              <span class="unit-label">sec</span>
-              <input class="unit-input" id="val-sec" type="number" min="0" step="0.001" oninput="onFrameInput('sec')">
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">참조 테이블 — <span id="ref-fps-label">60fps (1~60 frame)</span></div>
-        <div class="tbl-wrap">
-          <table class="ref">
-            <thead><tr>
-              <th style="width:20%">frame</th>
-              <th style="width:27%">msec (10단위)</th>
-              <th style="width:27%">msec</th>
-              <th style="width:26%">sec</th>
-            </tr></thead>
-            <tbody id="ref-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- 단위 변환 -->
-    <div class="panel" id="panel-unit">
-      <div class="panel-title">단위 변환</div>
-      <div class="card">
-        <div class="card-label">해상도 설정</div>
-        <div class="expr" style="margin-bottom:12px">
-          <div class="icard">
-            <span class="lbl">DPI</span>
-            <select id="dpi-sel" onchange="onDpiPreset()">
-              <option value="custom" disabled>Custom</option>
-              <option value="120">ldpi (120)</option>
-              <option value="160">mdpi (160)</option>
-              <option value="240">hdpi (240)</option>
-              <option value="320">xhdpi (320)</option>
-              <option value="480">xxhdpi (480)</option>
-              <option value="640" selected>xxxhdpi (640)</option>
-            </select>
-          </div>
-          <div class="icard" style="flex:0 0 auto;min-width:120px">
-            <span class="lbl">DPI (직접 입력)</span>
-            <input type="number" id="dpi-custom" value="640" min="1" oninput="onDpiCustom()">
-          </div>
-        </div>
-        <div class="units-grid">
-          <div class="unit-row active" data-unit="dp" onclick="selectUnitU('dp')"><span class="unit-label">dp</span><input class="unit-input" id="u-dp" type="number" value="1" oninput="onUnitInput('dp')"><span class="unit-name">dp</span></div>
-          <div class="unit-row" data-unit="sp" onclick="selectUnitU('sp')"><span class="unit-label">sp</span><input class="unit-input" id="u-sp" type="number" oninput="onUnitInput('sp')"><span class="unit-name">sp</span></div>
-          <div class="unit-row" data-unit="px" onclick="selectUnitU('px')"><span class="unit-label">px</span><input class="unit-input" id="u-px" type="number" oninput="onUnitInput('px')"><span class="unit-name">px</span></div>
-          <div class="unit-row" data-unit="mm" onclick="selectUnitU('mm')"><span class="unit-label">mm</span><input class="unit-input" id="u-mm" type="number" oninput="onUnitInput('mm')"><span class="unit-name">mm</span></div>
-          <div class="unit-row" data-unit="pt" onclick="selectUnitU('pt')"><span class="unit-label">pt</span><input class="unit-input" id="u-pt" type="number" oninput="onUnitInput('pt')"><span class="unit-name">pt</span></div>
-          <div class="unit-row" data-unit="in" onclick="selectUnitU('in')"><span class="unit-label">in</span><input class="unit-input" id="u-in" type="number" oninput="onUnitInput('in')"><span class="unit-name">inch</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 컬러 변환 -->
-    <div class="panel" id="panel-color">
-      <div class="panel-title">컬러 배열변환</div>
-      <div class="card">
-        <div class="card-label">HEX 입력</div>
-        <div class="expr" style="align-items:stretch">
-          <div class="icard">
-            <span class="lbl">HEX</span>
-            <div style="display:flex;align-items:center;gap:6px">
-              <input type="text" id="hex-in" value="F2F2F2" placeholder="F2F2F2" oninput="calcColor()" style="flex:1;min-width:0">
-              <button class="copy-btn" id="hex-copy-btn" onclick="copyHex()">복사</button>
-            </div>
-          </div>
-          <div id="color-preview" onclick="document.getElementById('color-picker').click()" style="aspect-ratio:1/1;border-radius:var(--radius-sm);border:1px solid var(--border);background:#F2F2F2;flex-shrink:0;width:auto;height:auto;align-self:stretch;cursor:pointer;min-width:56px;position:relative;overflow:hidden">
-            <input type="color" id="color-picker" value="#F2F2F2" oninput="calcColorFromPicker()" style="position:absolute;bottom:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:none">
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">RGBA 값</div>
-        <div class="expr">
-          <div class="icard"><span class="lbl">R</span><input type="number" id="r-val" value="242" min="0" max="255" oninput="calcColorFromRGB()"></div>
-          <div class="icard"><span class="lbl">G</span><input type="number" id="g-val" value="242" min="0" max="255" oninput="calcColorFromRGB()"></div>
-          <div class="icard"><span class="lbl">B</span><input type="number" id="b-val" value="242" min="0" max="255" oninput="calcColorFromRGB()"></div>
-          <div class="icard" style="min-width:90px">
-            <span class="lbl">A — <span id="a-pct">100</span>%</span>
-            <input type="range" id="a-val" value="100" min="0" max="100" oninput="calcColorFromRGB()" style="width:100%;height:28px;accent-color:var(--accent);background:transparent;border:none;padding:0;cursor:pointer">
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">After Effects expression</div>
-        <div class="rcard-row">
-          <code id="ae-val" style="font-size:13px;color:var(--text);flex:1;background:var(--bg3);padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border)">[0.949, 0.949, 0.949, 1]</code>
-          <button class="copy-btn" id="ae-copy-btn" onclick="copyText('ae-val','ae-copy-btn')">복사</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 백분율 -->
-    <div class="panel" id="panel-percent">
-      <div class="panel-title">백분율</div>
-      <div class="card">
-        <div class="card-label">A의 B% 값은?</div>
-        <div class="expr">
-          <div class="icard"><span class="lbl">A</span><input type="number" id="p1a" value="1234" oninput="calcP1()"></div>
-          <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">의</div>
-          <div class="icard"><span class="lbl">B (%)</span><input type="number" id="p1b" value="56" oninput="calcP1()"></div>
-          <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">값은?</div>
-          <div class="rcard"><span class="lbl">결과</span><span class="val" id="p1-res">0.0396</span></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">A에서 B로 변하면 몇% 변화?</div>
-        <div class="expr">
-          <div class="icard"><span class="lbl">A (변화 전)</span><input type="number" id="p2a" value="123" oninput="calcP2()"></div>
-          <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">→</div>
-          <div class="icard"><span class="lbl">B (변화 후)</span><input type="number" id="p2b" value="456" oninput="calcP2()"></div>
-          <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">이면?</div>
-          <div class="rcard"><span class="lbl">변화율</span><span class="val" id="p2-res">-18.18%</span></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">A는 B의 몇%?</div>
-        <div class="expr">
-          <div class="icard"><span class="lbl">A</span><input type="number" id="p3a" value="12" oninput="calcP3()"></div>
-          <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">는</div>
-          <div class="icard"><span class="lbl">B</span><input type="number" id="p3b" value="3456" oninput="calcP3()"></div>
-          <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">의</div>
-          <div class="rcard"><span class="lbl">비율</span><span class="val" id="p3-res">89.61%</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 렌더 시간 -->
-    <div class="panel" id="panel-render">
-      <div class="panel-title">렌더 시간</div>
-      <div class="card">
-        <div class="card-label">입력</div>
-        <div class="expr">
-          <div class="icard"><span class="lbl">1장 렌더 (초)</span><input type="number" id="r-one" value="12" min="0" oninput="calcRender()"></div>
-          <div class="icard"><span class="lbl">총 프레임 수</span><input type="number" id="r-total" value="345" min="0" oninput="calcRender()"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">결과</div>
-        <div class="expr" style="margin-bottom:8px">
-          <div class="rcard"><span class="lbl">총 시간 (초)</span><span class="val" id="r-sec">5360</span></div>
-          <div class="rcard"><span class="lbl">총 시간 (분)</span><span class="val" id="r-min">89.3</span></div>
-          <div class="rcard"><span class="lbl">총 시간 (시간)</span><span class="val" id="r-hr">1.49</span></div>
-        </div>
-        <div class="expr">
-          <div class="rcard"><span class="lbl">H : M : S</span><span class="val" id="r-hms" style="font-size:22px;font-weight:700">1:29:20</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 속도 변환 -->
-    <div class="panel" id="panel-speed">
-      <div class="panel-title">속도 변환</div>
-      <div class="card">
-        <div class="card-label">입력</div>
-        <div class="expr">
-          <div class="icard"><span class="lbl">속도 (km/h)</span><input type="number" id="kmh" value="100" oninput="calcSpeed()"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">결과</div>
-        <div class="expr" style="margin-bottom:8px">
-          <div class="rcard"><span class="lbl">초속 (m/s)</span><span class="val" id="mps">27.78</span></div>
-          <div class="rcard"><span class="lbl">1km 도달</span><span class="val" id="t1km">36.00 초</span></div>
-        </div>
-        <div class="expr">
-          <div class="rcard"><span class="lbl">1분 이동</span><span class="val" id="m1min">1666.7 m</span></div>
-          <div class="rcard"><span class="lbl">100m 도달</span><span class="val" id="t100m">3.60 초</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 퇴근 시간 -->
-    <div class="panel" id="panel-work">
-      <div class="panel-title">퇴근 시간</div>
-      <div class="card">
-        <div class="card-label">근무 조건 입력</div>
-        <div class="expr">
-          <div class="icard" style="min-width:130px"><span class="lbl">출근 시간</span><input type="time" id="work-in" value="09:00" oninput="calcWork()"></div>
-          <div class="icard"><span class="lbl">근로시간 (시간)</span><input type="number" id="work-hrs" value="8" min="1" max="24" step="0.5" oninput="calcWork()"></div>
-          <div class="icard"><span class="lbl">점심시간 (시간)</span><input type="number" id="lunch-hrs" value="1" min="0" max="3" step="0.5" oninput="calcWork()"></div>
-          <div class="ccard" id="half-card" onclick="toggleHalf()">
-            <span class="lbl">반차</span>
-            <div class="chk-box" id="chk-box"></div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">퇴근 시간</div>
-        <div class="result-big">
-          <div class="time" id="out-time">18:00</div>
-          <div class="sub" id="work-desc">근로시간 8시간 + 점심 1시간</div>
-        </div>
-        <div class="wit" id="wit-msg"></div>
-      </div>
-      <div class="card" id="countdown-card">
-        <div class="card-label">퇴근까지 남은 시간</div>
-        <div class="result-big" style="padding:16px">
-          <div class="time" id="countdown-time" style="font-size:36px;letter-spacing:.04em">--:--:--</div>
-          <div class="sub" id="countdown-sub">현재 시각 기준</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MM 산정 -->
-    <div class="panel" id="panel-mm">
-      <div class="panel-title">MM 산정</div>
-      <div class="card">
-        <div class="card-label">입력</div>
-        <div class="expr">
-          <div class="icard"><span class="lbl">투입 일수</span><input type="number" id="mm-days" value="11" min="0" oninput="calcMM()"></div>
-          <div class="icard"><span class="lbl">월 평균 일수</span><input type="number" id="mm-avg" value="21.4" step="0.1" oninput="calcMM()"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">결과</div>
-        <div class="expr">
-          <div class="rcard"><span class="lbl">MM</span><span class="val" id="mm-res">0.51</span></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-label">등급 기준</div>
-        <div class="expr">
-          <div class="rcard"><span class="lbl">초급</span><span class="val">5년 이하</span></div>
-          <div class="rcard"><span class="lbl">중급</span><span class="val">5~9년</span></div>
-          <div class="rcard"><span class="lbl">고급</span><span class="val">9년 이상</span></div>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- .lottie 변환 -->
-    <div class="panel" id="panel-lottie">
-      <div class="panel-title">JSON → .lottie 변환</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Lottie JSON 파일을 dotLottie 형식(.lottie)으로 일괄 변환</div>
-      <div class="card">
-        <div id="lt-dropzone" style="border:2px dashed var(--border2);border-radius:var(--radius-md);padding:48px 24px;text-align:center;cursor:pointer;transition:all .25s">
-          <div style="font-size:32px;margin-bottom:12px;opacity:0.5">⬆</div>
-          <div style="font-size:14px;color:var(--text2)">.json 파일을 드래그하거나 클릭하여 선택</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px">여러 파일을 한 번에 추가할 수 있습니다</div>
-        </div>
-        <input type="file" id="lt-fileInput" accept=".json,application/json" multiple hidden>
-      </div>
-      <div id="lt-listArea" style="display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;margin-bottom:10px;font-size:12px;color:var(--text3)">
-          <span id="lt-countLabel"></span>
-          <button id="lt-clearBtn" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer">전체 삭제</button>
-        </div>
-        <div id="lt-fileList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
-        <div id="lt-actions" style="display:flex;gap:10px;flex-wrap:wrap"></div>
-      </div>
-      <div style="margin-top:20px;padding:16px;border-radius:var(--radius-md);background:var(--bg3);border:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.7">
-        <span style="color:var(--text2);font-weight:500">dotLottie 형식이란?</span><br>
-        Lottie JSON과 리소스를 Deflate 압축된 ZIP 아카이브(.lottie)로 묶는 오픈소스 포맷입니다.
-        manifest.json + animations/ 구조로 구성되며, 원본 대비 용량이 크게 줄어듭니다.
-        모든 변환은 브라우저에서 로컬로 처리됩니다.
-      </div>
-    </div>
-
-
-    <!-- PNG 압축 -->
-    <div class="panel" id="panel-png">
-      <div class="panel-title">PNG 압축</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px">TinyPNG 수준의 PNG 압축 · 브라우저에서 로컬 처리</div>
-      <div class="card">
-        <div id="png-dropzone" style="border:2px dashed var(--border2);border-radius:var(--radius-md);padding:48px 24px;text-align:center;cursor:pointer;transition:all .25s">
-          <div style="font-size:32px;margin-bottom:12px;opacity:0.5">🗜</div>
-          <div style="font-size:14px;color:var(--text2)">PNG 파일을 드래그하거나 클릭하여 선택</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px">여러 파일 동시 처리 가능</div>
-        </div>
-        <input type="file" id="png-fileInput" accept="image/png" multiple hidden>
-      </div>
-      <div class="card">
-        <div class="card-label">압축 품질</div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <input type="range" id="png-slider" min="1" max="100" value="80" style="flex:1;accent-color:var(--accent)">
-          <input type="number" id="png-quality" min="1" max="100" value="80" style="width:60px;height:32px;padding:0 8px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:13px;text-align:center">
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)">
-          <input type="checkbox" id="png-unlock" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer">
-          <label for="png-unlock" style="cursor:pointer">80 이하 품질 허용 (품질 저하 주의)</label>
-        </div>
-      </div>
-      <button id="png-compress-btn" disabled style="width:100%;padding:12px;margin-bottom:12px;border-radius:var(--radius-md);border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;opacity:0.5">압축 시작</button>
-      <div id="png-status" style="font-size:12px;color:var(--text3);text-align:center;margin-bottom:8px;min-height:16px"></div>
-      <div id="png-results"></div>
-    </div>
-
-    <!-- 경로 변환 -->
-    <div class="panel" id="panel-path">
-      <div class="panel-title">경로 변환</div>
-      <div id="auto-copy-msg" style="display:none;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;text-align:center;margin-bottom:16px"></div>
-      <div class="card">
-        <div class="card-label">서버 이름</div>
-        <div class="expr">
-          <div class="icard"><span class="lbl">서버 이름</span><input type="text" id="server-mac" value="trplsrv" oninput="calcPath()"></div>
-        </div>
-      </div>
-      <div class="card" id="path-input-card">
-        <div class="card-label" style="display:flex;justify-content:space-between;align-items:center">
-          <span>경로 입력</span>
-          <span id="path-reset-hint" style="font-size:10px;color:var(--accent);cursor:pointer;display:none" onclick="resetPathInput()">다시 입력</span>
-        </div>
-        <div class="icard" id="path-icard">
-          <span class="lbl">Mac 또는 Windows 경로 붙여넣기</span>
-          <input type="text" id="path-input" placeholder="경로를 붙여 넣어 주세요." oninput="calcPath()">
-        </div>
-        <div id="path-input-display" style="display:none;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);padding:6px 12px;cursor:pointer;font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="resetPathInput()"></div>
-      </div>
-      <div id="path-result-area">
+      <!-- 프레임 변환 -->
+      <div class="panel" id="panel-frame">
+        <div class="panel-title">프레임 변환</div>
         <div class="card">
-          <div class="card-label">변환 결과</div>
-          <div class="rcard" style="margin-bottom:8px">
-            <span class="lbl">🪟 Win — 탐색기 네트워크 경로 (⊞R)</span>
-            <div class="rcard-row" style="margin-top:4px">
-              <code id="unc-result">...</code>
-              <button class="copy-btn" id="unc-btn" onclick="copyPathOnly('unc-result','unc-btn')">복사</button>
+          <div class="card-label">fps 설정</div>
+          <div class="expr">
+            <div class="icard">
+              <span class="lbl">프레임레이트</span>
+              <select id="fps-sel" onchange="onFpsChange()">
+                <option value="60">60 fps</option>
+                <option value="30">30 fps</option>
+                <option value="24">24 fps</option>
+              </select>
             </div>
           </div>
-          <div class="rcard">
-            <span class="lbl">🍎 Mac — Finder 서버 연결 (⌘K)</span>
-            <div class="rcard-row" style="margin-top:4px">
-              <code id="smb-result">...</code>
-              <button class="copy-btn" id="smb-btn" onclick="copyPathOnly('smb-result','smb-btn')">복사</button>
+          <div style="margin-top:10px">
+            <div class="units-grid" style="grid-template-columns:1fr 1fr 1fr">
+              <div class="unit-row active" data-unit="frame" onclick="selectFrameUnit('frame')">
+                <span class="unit-label">frame</span>
+                <input class="unit-input" id="val-frame" type="number" value="1" min="0"
+                  oninput="onFrameInput('frame')">
+              </div>
+              <div class="unit-row" data-unit="msec" onclick="selectFrameUnit('msec')">
+                <span class="unit-label">msec</span>
+                <input class="unit-input" id="val-msec" type="number" min="0" oninput="onFrameInput('msec')">
+              </div>
+              <div class="unit-row" data-unit="sec" onclick="selectFrameUnit('sec')">
+                <span class="unit-label">sec</span>
+                <input class="unit-input" id="val-sec" type="number" min="0" step="0.001" oninput="onFrameInput('sec')">
+              </div>
             </div>
           </div>
         </div>
         <div class="card">
-          <div class="card-label">공유용 한번에 복사</div>
-          <div class="rcard">
-            <span class="lbl">Mac / Win 경로를 함께 복사</span>
-            <div class="rcard-row" style="margin-top:4px">
-              <code id="share-preview" style="font-size:11px;color:var(--text3);white-space:pre;line-height:1.6">...</code>
-              <button class="copy-btn" id="share-btn" onclick="copySharePath()">복사</button>
+          <div class="card-label">참조 테이블 — <span id="ref-fps-label">60fps (1~60 frame)</span></div>
+          <div class="tbl-wrap">
+            <table class="ref">
+              <thead>
+                <tr>
+                  <th style="width:20%">frame</th>
+                  <th style="width:27%">msec (10단위)</th>
+                  <th style="width:27%">msec</th>
+                  <th style="width:26%">sec</th>
+                </tr>
+              </thead>
+              <tbody id="ref-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 단위 변환 -->
+      <div class="panel" id="panel-unit">
+        <div class="panel-title">단위 변환</div>
+        <div class="card">
+          <div class="card-label">해상도 설정</div>
+          <div class="expr" style="margin-bottom:12px">
+            <div class="icard">
+              <span class="lbl">DPI</span>
+              <select id="dpi-sel" onchange="onDpiPreset()">
+                <option value="custom" disabled>Custom</option>
+                <option value="120">ldpi (120)</option>
+                <option value="160">mdpi (160)</option>
+                <option value="240">hdpi (240)</option>
+                <option value="320">xhdpi (320)</option>
+                <option value="480">xxhdpi (480)</option>
+                <option value="640" selected>xxxhdpi (640)</option>
+              </select>
+            </div>
+            <div class="icard" style="flex:0 0 auto;min-width:120px">
+              <span class="lbl">DPI (직접 입력)</span>
+              <input type="number" id="dpi-custom" value="640" min="1" oninput="onDpiCustom()">
+            </div>
+          </div>
+          <div class="units-grid">
+            <div class="unit-row active" data-unit="dp" onclick="selectUnitU('dp')"><span
+                class="unit-label">dp</span><input class="unit-input" id="u-dp" type="number" value="1"
+                oninput="onUnitInput('dp')"><span class="unit-name">dp</span></div>
+            <div class="unit-row" data-unit="sp" onclick="selectUnitU('sp')"><span class="unit-label">sp</span><input
+                class="unit-input" id="u-sp" type="number" oninput="onUnitInput('sp')"><span class="unit-name">sp</span>
+            </div>
+            <div class="unit-row" data-unit="px" onclick="selectUnitU('px')"><span class="unit-label">px</span><input
+                class="unit-input" id="u-px" type="number" oninput="onUnitInput('px')"><span class="unit-name">px</span>
+            </div>
+            <div class="unit-row" data-unit="mm" onclick="selectUnitU('mm')"><span class="unit-label">mm</span><input
+                class="unit-input" id="u-mm" type="number" oninput="onUnitInput('mm')"><span class="unit-name">mm</span>
+            </div>
+            <div class="unit-row" data-unit="pt" onclick="selectUnitU('pt')"><span class="unit-label">pt</span><input
+                class="unit-input" id="u-pt" type="number" oninput="onUnitInput('pt')"><span class="unit-name">pt</span>
+            </div>
+            <div class="unit-row" data-unit="in" onclick="selectUnitU('in')"><span class="unit-label">in</span><input
+                class="unit-input" id="u-in" type="number" oninput="onUnitInput('in')"><span
+                class="unit-name">inch</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 컬러 변환 -->
+      <div class="panel" id="panel-color">
+        <div class="panel-title">컬러 배열변환</div>
+        <div class="card">
+          <div class="card-label">HEX 입력</div>
+          <div class="expr" style="align-items:stretch">
+            <div class="icard">
+              <span class="lbl">HEX</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="text" id="hex-in" value="F2F2F2" placeholder="F2F2F2" oninput="calcColor()"
+                  style="flex:1;min-width:0">
+                <button class="copy-btn" id="hex-copy-btn" onclick="copyHex()">복사</button>
+              </div>
+            </div>
+            <div id="color-preview" onclick="document.getElementById('color-picker').click()"
+              style="aspect-ratio:1/1;border-radius:var(--radius-sm);border:1px solid var(--border);background:#F2F2F2;flex-shrink:0;width:auto;height:auto;align-self:stretch;cursor:pointer;min-width:56px;position:relative;overflow:hidden">
+              <input type="color" id="color-picker" value="#F2F2F2" oninput="calcColorFromPicker()"
+                style="position:absolute;bottom:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:none">
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">RGBA 값</div>
+          <div class="expr">
+            <div class="icard"><span class="lbl">R</span><input type="number" id="r-val" value="242" min="0" max="255"
+                oninput="calcColorFromRGB()"></div>
+            <div class="icard"><span class="lbl">G</span><input type="number" id="g-val" value="242" min="0" max="255"
+                oninput="calcColorFromRGB()"></div>
+            <div class="icard"><span class="lbl">B</span><input type="number" id="b-val" value="242" min="0" max="255"
+                oninput="calcColorFromRGB()"></div>
+            <div class="icard" style="min-width:90px">
+              <span class="lbl">A — <span id="a-pct">100</span>%</span>
+              <input type="range" id="a-val" value="100" min="0" max="100" oninput="calcColorFromRGB()"
+                style="width:100%;height:28px;accent-color:var(--accent);background:transparent;border:none;padding:0;cursor:pointer">
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">After Effects expression</div>
+          <div class="rcard-row">
+            <code id="ae-val"
+              style="font-size:13px;color:var(--text);flex:1;background:var(--bg3);padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border)">[0.949, 0.949, 0.949, 1]</code>
+            <button class="copy-btn" id="ae-copy-btn" onclick="copyText('ae-val','ae-copy-btn')">복사</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 백분율 -->
+      <div class="panel" id="panel-percent">
+        <div class="panel-title">백분율</div>
+        <div class="card">
+          <div class="card-label">A의 B% 값은?</div>
+          <div class="expr">
+            <div class="icard"><span class="lbl">A</span><input type="number" id="p1a" value="1234" oninput="calcP1()">
+            </div>
+            <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">의</div>
+            <div class="icard"><span class="lbl">B (%)</span><input type="number" id="p1b" value="56"
+                oninput="calcP1()"></div>
+            <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">값은?</div>
+            <div class="rcard"><span class="lbl">결과</span><span class="val" id="p1-res">0.0396</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">A에서 B로 변하면 몇% 변화?</div>
+          <div class="expr">
+            <div class="icard"><span class="lbl">A (변화 전)</span><input type="number" id="p2a" value="123"
+                oninput="calcP2()"></div>
+            <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">→</div>
+            <div class="icard"><span class="lbl">B (변화 후)</span><input type="number" id="p2b" value="456"
+                oninput="calcP2()"></div>
+            <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">이면?</div>
+            <div class="rcard"><span class="lbl">변화율</span><span class="val" id="p2-res">-18.18%</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">A는 B의 몇%?</div>
+          <div class="expr">
+            <div class="icard"><span class="lbl">A</span><input type="number" id="p3a" value="12" oninput="calcP3()">
+            </div>
+            <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">는</div>
+            <div class="icard"><span class="lbl">B</span><input type="number" id="p3b" value="3456" oninput="calcP3()">
+            </div>
+            <div style="align-self:center;color:var(--text3);font-size:13px;flex-shrink:0">의</div>
+            <div class="rcard"><span class="lbl">비율</span><span class="val" id="p3-res">89.61%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 렌더 시간 -->
+      <div class="panel" id="panel-render">
+        <div class="panel-title">렌더 시간</div>
+        <div class="card">
+          <div class="card-label">입력</div>
+          <div class="expr">
+            <div class="icard"><span class="lbl">1장 렌더 (초)</span><input type="number" id="r-one" value="12" min="0"
+                oninput="calcRender()"></div>
+            <div class="icard"><span class="lbl">총 프레임 수</span><input type="number" id="r-total" value="345" min="0"
+                oninput="calcRender()"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">결과</div>
+          <div class="expr" style="margin-bottom:8px">
+            <div class="rcard"><span class="lbl">총 시간 (초)</span><span class="val" id="r-sec">5360</span></div>
+            <div class="rcard"><span class="lbl">총 시간 (분)</span><span class="val" id="r-min">89.3</span></div>
+            <div class="rcard"><span class="lbl">총 시간 (시간)</span><span class="val" id="r-hr">1.49</span></div>
+          </div>
+          <div class="expr">
+            <div class="rcard"><span class="lbl">H : M : S</span><span class="val" id="r-hms"
+                style="font-size:22px;font-weight:700">1:29:20</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 속도 변환 -->
+      <div class="panel" id="panel-speed">
+        <div class="panel-title">속도 변환</div>
+        <div class="card">
+          <div class="card-label">입력</div>
+          <div class="expr">
+            <div class="icard"><span class="lbl">속도 (km/h)</span><input type="number" id="kmh" value="100"
+                oninput="calcSpeed()"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">결과</div>
+          <div class="expr" style="margin-bottom:8px">
+            <div class="rcard"><span class="lbl">초속 (m/s)</span><span class="val" id="mps">27.78</span></div>
+            <div class="rcard"><span class="lbl">1km 도달</span><span class="val" id="t1km">36.00 초</span></div>
+          </div>
+          <div class="expr">
+            <div class="rcard"><span class="lbl">1분 이동</span><span class="val" id="m1min">1666.7 m</span></div>
+            <div class="rcard"><span class="lbl">100m 도달</span><span class="val" id="t100m">3.60 초</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 퇴근 시간 -->
+      <div class="panel" id="panel-work">
+        <div class="panel-title">퇴근 시간</div>
+        <div class="card">
+          <div class="card-label">근무 조건 입력</div>
+          <div class="expr">
+            <div class="icard" style="min-width:130px"><span class="lbl">출근 시간</span><input type="time" id="work-in"
+                value="09:00" oninput="calcWork()"></div>
+            <div class="icard"><span class="lbl">근로시간 (시간)</span><input type="number" id="work-hrs" value="8" min="1"
+                max="24" step="0.5" oninput="calcWork()"></div>
+            <div class="icard"><span class="lbl">점심시간 (시간)</span><input type="number" id="lunch-hrs" value="1" min="0"
+                max="3" step="0.5" oninput="calcWork()"></div>
+            <div class="ccard" id="half-card" onclick="toggleHalf()">
+              <span class="lbl">반차</span>
+              <div class="chk-box" id="chk-box"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">퇴근 시간</div>
+          <div class="result-big">
+            <div class="time" id="out-time">18:00</div>
+            <div class="sub" id="work-desc">근로시간 8시간 + 점심 1시간</div>
+          </div>
+          <div class="wit" id="wit-msg"></div>
+        </div>
+        <div class="card" id="countdown-card">
+          <div class="card-label">퇴근까지 남은 시간</div>
+          <div class="result-big" style="padding:16px">
+            <div class="time" id="countdown-time" style="font-size:36px;letter-spacing:.04em">--:--:--</div>
+            <div class="sub" id="countdown-sub">현재 시각 기준</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MM 산정 -->
+      <div class="panel" id="panel-mm">
+        <div class="panel-title">MM 산정</div>
+        <div class="card">
+          <div class="card-label">입력</div>
+          <div class="expr">
+            <div class="icard"><span class="lbl">투입 일수</span><input type="number" id="mm-days" value="11" min="0"
+                oninput="calcMM()"></div>
+            <div class="icard"><span class="lbl">월 평균 일수</span><input type="number" id="mm-avg" value="21.4" step="0.1"
+                oninput="calcMM()"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">결과</div>
+          <div class="expr">
+            <div class="rcard"><span class="lbl">MM</span><span class="val" id="mm-res">0.51</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">등급 기준</div>
+          <div class="expr">
+            <div class="rcard"><span class="lbl">초급</span><span class="val">5년 이하</span></div>
+            <div class="rcard"><span class="lbl">중급</span><span class="val">5~9년</span></div>
+            <div class="rcard"><span class="lbl">고급</span><span class="val">9년 이상</span></div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- .lottie 변환 -->
+      <div class="panel" id="panel-lottie">
+        <div class="panel-title">JSON → .lottie 변환</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Lottie JSON 파일을 dotLottie 형식(.lottie)으로 일괄 변환
+        </div>
+        <div class="card">
+          <div id="lt-dropzone"
+            style="border:2px dashed var(--border2);border-radius:var(--radius-md);padding:48px 24px;text-align:center;cursor:pointer;transition:all .25s">
+            <div style="font-size:32px;margin-bottom:12px;opacity:0.5">⬆</div>
+            <div style="font-size:14px;color:var(--text2)">.json 파일을 드래그하거나 클릭하여 선택</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">여러 파일을 한 번에 추가할 수 있습니다</div>
+          </div>
+          <input type="file" id="lt-fileInput" accept=".json,application/json" multiple hidden>
+        </div>
+        <div id="lt-listArea" style="display:none">
+          <div
+            style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;margin-bottom:10px;font-size:12px;color:var(--text3)">
+            <span id="lt-countLabel"></span>
+            <button id="lt-clearBtn"
+              style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer">전체 삭제</button>
+          </div>
+          <div id="lt-fileList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+          <div id="lt-actions" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+        </div>
+        <div
+          style="margin-top:20px;padding:16px;border-radius:var(--radius-md);background:var(--bg3);border:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.7">
+          <span style="color:var(--text2);font-weight:500">dotLottie 형식이란?</span><br>
+          Lottie JSON과 리소스를 Deflate 압축된 ZIP 아카이브(.lottie)로 묶는 오픈소스 포맷입니다.
+          manifest.json + animations/ 구조로 구성되며, 원본 대비 용량이 크게 줄어듭니다.
+          모든 변환은 브라우저에서 로컬로 처리됩니다.
+        </div>
+      </div>
+
+
+      <!-- PNG 압축 -->
+      <div class="panel" id="panel-png">
+        <div class="panel-title">PNG 압축</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:20px">TinyPNG 수준의 PNG 압축 · 브라우저에서 로컬 처리</div>
+        <div class="card">
+          <div id="png-dropzone"
+            style="border:2px dashed var(--border2);border-radius:var(--radius-md);padding:48px 24px;text-align:center;cursor:pointer;transition:all .25s">
+            <div style="font-size:32px;margin-bottom:12px;opacity:0.5">🗜</div>
+            <div style="font-size:14px;color:var(--text2)">PNG 파일을 드래그하거나 클릭하여 선택</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">여러 파일 동시 처리 가능</div>
+          </div>
+          <input type="file" id="png-fileInput" accept="image/png" multiple hidden>
+        </div>
+        <div class="card">
+          <div class="card-label">압축 품질</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <input type="range" id="png-slider" min="1" max="100" value="80" style="flex:1;accent-color:var(--accent)">
+            <input type="number" id="png-quality" min="1" max="100" value="80"
+              style="width:60px;height:32px;padding:0 8px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:13px;text-align:center">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)">
+            <input type="checkbox" id="png-unlock"
+              style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer">
+            <label for="png-unlock" style="cursor:pointer">80 이하 품질 허용 (품질 저하 주의)</label>
+          </div>
+        </div>
+        <button id="png-compress-btn" disabled
+          style="width:100%;padding:12px;margin-bottom:12px;border-radius:var(--radius-md);border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;opacity:0.5">압축
+          시작</button>
+        <div id="png-status"
+          style="font-size:12px;color:var(--text3);text-align:center;margin-bottom:8px;min-height:16px"></div>
+        <div id="png-results"></div>
+      </div>
+
+      <!-- 경로 변환 -->
+      <div class="panel" id="panel-path">
+        <div class="panel-title">경로 변환</div>
+        <div id="auto-copy-msg"
+          style="display:none;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;text-align:center;margin-bottom:16px">
+        </div>
+        <div class="card">
+          <div class="card-label">서버 이름</div>
+          <div class="expr">
+            <div class="icard"><span class="lbl">서버 이름</span><input type="text" id="server-mac" value="trplsrv"
+                oninput="calcPath()"></div>
+          </div>
+        </div>
+        <div class="card" id="path-input-card">
+          <div class="card-label" style="display:flex;justify-content:space-between;align-items:center">
+            <span>경로 입력</span>
+            <span id="path-reset-hint" style="font-size:10px;color:var(--accent);cursor:pointer;display:none"
+              onclick="resetPathInput()">다시 입력</span>
+          </div>
+          <div class="icard" id="path-icard">
+            <span class="lbl">Mac 또는 Windows 경로 붙여넣기</span>
+            <input type="text" id="path-input" placeholder="경로를 붙여 넣어 주세요." oninput="calcPath()">
+          </div>
+          <div id="path-input-display"
+            style="display:none;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);padding:6px 12px;cursor:pointer;font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+            onclick="resetPathInput()"></div>
+        </div>
+        <div id="path-result-area">
+          <div class="card">
+            <div class="card-label">변환 결과</div>
+            <div class="rcard" style="margin-bottom:8px">
+              <span class="lbl">🪟 Win — 탐색기 네트워크 경로 (⊞R)</span>
+              <div class="rcard-row" style="margin-top:4px">
+                <code id="unc-result">...</code>
+                <button class="copy-btn" id="unc-btn" onclick="copyPathOnly('unc-result','unc-btn')">복사</button>
+              </div>
+            </div>
+            <div class="rcard">
+              <span class="lbl">🍎 Mac — Finder 서버 연결 (⌘K)</span>
+              <div class="rcard-row" style="margin-top:4px">
+                <code id="smb-result">...</code>
+                <button class="copy-btn" id="smb-btn" onclick="copyPathOnly('smb-result','smb-btn')">복사</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-label">공유용 한번에 복사</div>
+            <div class="rcard">
+              <span class="lbl">Mac / Win 경로를 함께 복사</span>
+              <div class="rcard-row" style="margin-top:4px">
+                <code id="share-preview"
+                  style="font-size:11px;color:var(--text3);white-space:pre;line-height:1.6">...</code>
+                <button class="copy-btn" id="share-btn" onclick="copySharePath()">복사</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-  </main>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-<div style="position:fixed;bottom:14px;right:18px;font-size:11px;color:var(--text3);font-style:italic;pointer-events:none;letter-spacing:.02em">made by ovcos©</div>
+    </main>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <div
+    style="position:fixed;bottom:14px;right:18px;font-size:11px;color:var(--text3);font-style:italic;pointer-events:none;letter-spacing:.02em">
+    made by ovcos©</div>
 
-<script>
-// --- Sidebar tab definitions ---
-const ALL_TABS = [
-  { tab: 'path',    icon: '📁', label: '경로 변환' },
-  { tab: 'lottie',  icon: '🦎', label: '.lottie 변환' },
-  { tab: 'png',     icon: '🗜', label: 'PNG 압축' },
-  { tab: 'frame',   icon: '⏱', label: '프레임 변환' },
-  { tab: 'unit',    icon: '📐', label: '단위 변환' },
-  { tab: 'color',   icon: '🎨', label: '컬러 배열변환' },
-  { tab: 'percent', icon: '📊', label: '백분율' },
-  { tab: 'render',  icon: '🖥', label: '렌더 시간' },
-  { tab: 'speed',   icon: '🚗', label: '속도 변환' },
-  { tab: 'work',    icon: '🕐', label: '퇴근 시간' },
-  { tab: 'mm',      icon: '👥', label: 'MM 산정' },
-];
+  <script>
+    // --- Sidebar tab definitions ---
+    const ALL_TABS = [
+      { tab: 'path', icon: '📁', label: '경로 변환' },
+      { tab: 'lottie', icon: '🦎', label: '.lottie 변환' },
+      { tab: 'png', icon: '🗜', label: 'PNG 압축' },
+      { tab: 'frame', icon: '⏱', label: '프레임 변환' },
+      { tab: 'unit', icon: '📐', label: '단위 변환' },
+      { tab: 'color', icon: '🎨', label: '컬러 배열변환' },
+      { tab: 'percent', icon: '📊', label: '백분율' },
+      { tab: 'render', icon: '🖥', label: '렌더 시간' },
+      { tab: 'speed', icon: '🚗', label: '속도 변환' },
+      { tab: 'work', icon: '🕐', label: '퇴근 시간' },
+      { tab: 'mm', icon: '👥', label: 'MM 산정' },
+    ];
 
-let tabOrder   = ALL_TABS.map(t => t.tab);
-let hiddenTabs = ['frame', 'color', 'speed', 'mm'];
-let editMode   = false;
-let dragSrc    = null;
+    let tabOrder = ALL_TABS.map(t => t.tab);
+    let hiddenTabs = ['frame', 'color', 'speed', 'mm'];
+    let editMode = false;
+    let dragSrc = null;
 
-function saveTabSettings() {
-  setStorage('vi_tab_order',  JSON.stringify(tabOrder));
-  setStorage('vi_tab_hidden', JSON.stringify(hiddenTabs));
-}
-function loadTabSettings() {
-  try {
-    const o = getStorage('vi_tab_order');
-    const h = getStorage('vi_tab_hidden');
-    if (o) tabOrder   = JSON.parse(o);
-    if (h) hiddenTabs = JSON.parse(h);
-  } catch(e) {}
-}
-
-function renderNav() {
-  const list = document.getElementById('nav-list');
-  list.innerHTML = '';
-  tabOrder.forEach(tab => {
-    const info = ALL_TABS.find(t => t.tab === tab);
-    if (!info) return;
-    const isHidden  = hiddenTabs.includes(tab);
-    const isActive  = document.getElementById('panel-' + tab)?.classList.contains('active');
-
-    const btn = document.createElement('button');
-    btn.className  = 'nav-item' + (isActive ? ' active' : '') + (isHidden && !editMode ? ' hidden-tab' : '');
-    btn.dataset.tab = tab;
-
-    if (editMode) {
-      btn.className += ' edit-mode';
-      btn.draggable  = true;
-      btn.innerHTML  = `<span class="drag-handle">⠿</span><span class="icon">${info.icon}</span>${info.label}<button class="toggle-btn ${isHidden ? '' : 'on'}" data-tab="${tab}" onclick="event.stopPropagation();toggleTabVisibility('${tab}')"></button>`;
-      btn.addEventListener('dragstart', onDragStart);
-      btn.addEventListener('dragover',  onDragOver);
-      btn.addEventListener('dragleave', onDragLeave);
-      btn.addEventListener('drop',      onDrop);
-      btn.addEventListener('dragend',   onDragEnd);
-    } else {
-      if (isHidden) return;
-      btn.innerHTML = `<span class="icon">${info.icon}</span>${info.label}`;
-      btn.addEventListener('click', () => switchTab(tab));
+    function saveTabSettings() {
+      setStorage('vi_tab_order', JSON.stringify(tabOrder));
+      setStorage('vi_tab_hidden', JSON.stringify(hiddenTabs));
     }
-    list.appendChild(btn);
-  });
-}
-
-function switchTab(tab) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-' + tab).classList.add('active');
-  saveLastTab(tab);
-  renderNav();
-}
-
-function toggleTabVisibility(tab) {
-  if (hiddenTabs.includes(tab)) {
-    hiddenTabs = hiddenTabs.filter(t => t !== tab);
-  } else {
-    hiddenTabs.push(tab);
-  }
-  saveTabSettings();
-  renderNav();
-}
-
-function toggleEditMode() {
-  editMode = !editMode;
-  const btn = document.getElementById('edit-btn');
-  btn.textContent = editMode ? '완료' : '편집';
-  btn.classList.toggle('active', editMode);
-  renderNav();
-}
-
-// --- Drag & Drop ---
-function onDragStart(e) {
-  dragSrc = this;
-  this.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-}
-function onDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  if (this !== dragSrc) this.classList.add('drag-over');
-}
-function onDragLeave() { this.classList.remove('drag-over'); }
-function onDrop(e) {
-  e.preventDefault();
-  this.classList.remove('drag-over');
-  if (this === dragSrc) return;
-  const from = tabOrder.indexOf(dragSrc.dataset.tab);
-  const to   = tabOrder.indexOf(this.dataset.tab);
-  if (from < 0 || to < 0) return;
-  tabOrder.splice(from, 1);
-  tabOrder.splice(to, 0, dragSrc.dataset.tab);
-  saveTabSettings();
-  renderNav();
-}
-function onDragEnd() {
-  document.querySelectorAll('.nav-item').forEach(n => {
-    n.classList.remove('dragging', 'drag-over');
-  });
-}
-
-// Init sidebar
-loadTabSettings();
-renderNav();
-
-// --- Copy ---
-function copyToClipboard(text, html) {
-  if (navigator.clipboard && window.isSecureContext) {
-    if (html && typeof ClipboardItem !== 'undefined') {
-      const plainBlob = new Blob([text], { type: 'text/plain' });
-      const htmlBlob  = new Blob([html], { type: 'text/html' });
-      return navigator.clipboard.write([
-        new ClipboardItem({
-          'text/plain': Promise.resolve(plainBlob),
-          'text/html':  Promise.resolve(htmlBlob)
-        })
-      ]);
+    function loadTabSettings() {
+      try {
+        const o = getStorage('vi_tab_order');
+        const h = getStorage('vi_tab_hidden');
+        if (o) tabOrder = JSON.parse(o);
+        if (h) hiddenTabs = JSON.parse(h);
+      } catch (e) { }
     }
-    if (typeof ClipboardItem !== 'undefined') {
-      // Safari: Promise를 ClipboardItem에 감싸서 동기 컨텍스트 유지
-      return navigator.clipboard.write([
-        new ClipboardItem({
-          'text/plain': Promise.resolve(new Blob([text], { type: 'text/plain' }))
-        })
-      ]);
-    }
-    return navigator.clipboard.writeText(text);
-  } else {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    return Promise.resolve();
-  }
-}
-function copyText(id, btnId) {
-  const text = document.getElementById(id).textContent;
-  if (text === '—' || text === '...') return;
-  copyToClipboard(text).then(() => {
-    const btn = document.getElementById(btnId);
-    btn.textContent = '완료';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
-  });
-}
 
-// --- Frame ---
-let activeFrameUnit = 'frame';
-function getFps() { return parseFloat(document.getElementById('fps-sel').value) || 60; }
-function round10(ms) { return Math.round(Math.round(ms) * 0.1) * 10; }
-function toMsec(val, unit) {
-  const fps = getFps();
-  if (unit === 'frame') return val / fps * 1000;
-  if (unit === 'msec') return val;
-  if (unit === 'sec') return val * 1000;
-  return 0;
-}
-function fromMsec(ms, unit) {
-  const fps = getFps();
-  if (unit === 'frame') return ms / 1000 * fps;
-  if (unit === 'msec') return ms;
-  if (unit === 'sec') return ms / 1000;
-  return 0;
-}
-function selectFrameUnit(unit) {
-  activeFrameUnit = unit;
-  document.querySelectorAll('#panel-frame .unit-row').forEach(r => r.classList.toggle('active', r.dataset.unit === unit));
-}
-function onFrameInput(unit) {
-  selectFrameUnit(unit);
-  const val = parseFloat(document.getElementById('val-' + unit).value);
-  if (isNaN(val)) return;
-  const ms = toMsec(val, unit);
-  ['frame', 'msec', 'sec'].forEach(u => {
-    if (u === unit) return;
-    const v = fromMsec(ms, u);
-    document.getElementById('val-' + u).value = u === 'frame' ? parseFloat(v.toFixed(2)) : u === 'msec' ? parseFloat(v.toFixed(2)) : parseFloat(v.toFixed(4));
-  });
-}
-function buildRef() {
-  const fps = getFps();
-  document.getElementById('ref-fps-label').textContent = `${fps}fps (1~${fps} frame)`;
-  const tbody = document.getElementById('ref-body');
-  tbody.innerHTML = '';
-  for (let i = 1; i <= fps; i++) {
-    const ms = i / fps * 1000;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${i}</td><td>${round10(ms)}</td><td>${parseFloat(ms.toFixed(2))}</td><td>${parseFloat((ms / 1000).toFixed(4))}</td>`;
-    tbody.appendChild(tr);
-  }
-}
-function onFpsChange() { buildRef(); onFrameInput(activeFrameUnit); }
-buildRef();
-document.getElementById('val-frame').value = '1';
-onFrameInput('frame');
+    function renderNav() {
+      const list = document.getElementById('nav-list');
+      list.innerHTML = '';
+      tabOrder.forEach(tab => {
+        const info = ALL_TABS.find(t => t.tab === tab);
+        if (!info) return;
+        const isHidden = hiddenTabs.includes(tab);
+        const isActive = document.getElementById('panel-' + tab)?.classList.contains('active');
 
-// --- Unit ---
-let activeUnitU = 'dp';
-function getDpi() { return parseFloat(document.getElementById('dpi-custom').value) || 160; }
-function toPx(val, unit) {
-  const dpi = getDpi(), d = dpi / 160;
-  if (unit === 'dp' || unit === 'sp') return val * d;
-  if (unit === 'px') return val;
-  if (unit === 'mm') return val * dpi / 25.4;
-  if (unit === 'pt') return val * dpi / 72;
-  if (unit === 'in') return val * dpi;
-  return 0;
-}
-function fromPx(px, unit) {
-  const dpi = getDpi(), d = dpi / 160;
-  if (unit === 'dp' || unit === 'sp') return px / d;
-  if (unit === 'px') return px;
-  if (unit === 'mm') return px * 25.4 / dpi;
-  if (unit === 'pt') return px * 72 / dpi;
-  if (unit === 'in') return px / dpi;
-  return 0;
-}
-function selectUnitU(unit) {
-  activeUnitU = unit;
-  document.querySelectorAll('#panel-unit .unit-row').forEach(r => r.classList.toggle('active', r.dataset.unit === unit));
-}
-function onUnitInput(unit) {
-  selectUnitU(unit);
-  const val = parseFloat(document.getElementById('u-' + unit).value);
-  if (isNaN(val)) return;
-  const px = toPx(val, unit);
-  ['dp', 'sp', 'px', 'mm', 'pt', 'in'].forEach(u => {
-    if (u === unit) return;
-    const v = fromPx(px, u);
-    document.getElementById('u-' + u).value = u === 'in' ? parseFloat(v.toFixed(4)) : u === 'mm' ? parseFloat(v.toFixed(3)) : parseFloat(v.toFixed(2));
-  });
-}
+        const btn = document.createElement('button');
+        btn.className = 'nav-item' + (isActive ? ' active' : '') + (isHidden && !editMode ? ' hidden-tab' : '');
+        btn.dataset.tab = tab;
 
-function onDpiPreset() {
-  const sel = document.getElementById('dpi-sel');
-  if (sel.value === 'custom') return;
-  document.getElementById('dpi-custom').value = sel.value;
-  onUnitInput(activeUnitU);
-}
-function onDpiCustom() {
-  // 직접 입력 시 프리셋을 Custom으로 표시
-  const customVal = parseFloat(document.getElementById('dpi-custom').value);
-  const sel = document.getElementById('dpi-sel');
-  const presets = [120, 160, 240, 320, 480, 640];
-  if (presets.includes(customVal)) {
-    sel.value = String(customVal);
-  } else {
-    sel.value = 'custom';
-  }
-  onUnitInput(activeUnitU);
-}
-function onDpiChange() { onUnitInput(activeUnitU); }
-document.getElementById('u-dp').value = '1';
-onUnitInput('dp');
-
-// --- Color ---
-function copyHex() {
-  const hex = '#' + document.getElementById('hex-in').value.replace('#','').trim().toUpperCase();
-  copyToClipboard(hex).then(() => {
-    const btn = document.getElementById('hex-copy-btn');
-    btn.textContent = '완료';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
-  });
-}
-// --- Color picker ---
-function updateAE(r, g, b, a) {
-  const av = parseFloat((a/100).toFixed(3));
-  document.getElementById('ae-val').textContent =
-    `[${parseFloat((r/255).toFixed(3))}, ${parseFloat((g/255).toFixed(3))}, ${parseFloat((b/255).toFixed(3))}, ${parseFloat(av.toFixed(3))}]`;
-}
-function calcColor() {
-  let hex = document.getElementById('hex-in').value.replace('#', '').trim();
-  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-  if (hex.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(hex)) return;
-  const r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16), b = parseInt(hex.slice(4, 6), 16);
-  const a = Number(document.getElementById('a-val').value);
-  document.getElementById('r-val').value = r;
-  document.getElementById('g-val').value = g;
-  document.getElementById('b-val').value = b;
-  document.getElementById('color-preview').style.background = '#' + hex;
-  document.getElementById('color-picker').value = '#' + hex;
-  updateAE(r, g, b, a);
-}
-function calcColorFromRGB() {
-  const clamp = id => {
-    const el = document.getElementById(id);
-    let v = parseInt(el.value)||0;
-    v = Math.min(255, Math.max(0, v));
-    el.value = v;
-    return v;
-  };
-  const r = clamp('r-val'), g = clamp('g-val'), b = clamp('b-val');
-  const a = Number(document.getElementById('a-val').value);
-  document.getElementById('a-pct').textContent = a;
-  const hex = [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('').toUpperCase();
-  document.getElementById('hex-in').value = hex;
-  document.getElementById('color-preview').style.background = '#' + hex;
-  document.getElementById('color-picker').value = '#' + hex;
-  updateAE(r, g, b, a);
-}
-function calcColorFromPicker() {
-  const hex = document.getElementById('color-picker').value.replace('#','');
-  document.getElementById('hex-in').value = hex.toUpperCase();
-  calcColor();
-}
-calcColor();
-
-// --- Percent ---
-function calcP1() { const a = parseFloat(document.getElementById('p1a').value)||0, b = parseFloat(document.getElementById('p1b').value)||0; document.getElementById('p1-res').textContent = parseFloat((a*b/100).toFixed(4)); }
-function calcP2() { const a = parseFloat(document.getElementById('p2a').value)||0, b = parseFloat(document.getElementById('p2b').value)||0; document.getElementById('p2-res').textContent = a ? parseFloat(((b-a)/a*100).toFixed(2))+'%' : '—'; }
-function calcP3() { const a = parseFloat(document.getElementById('p3a').value)||0, b = parseFloat(document.getElementById('p3b').value)||1; document.getElementById('p3-res').textContent = b ? parseFloat((a/b*100).toFixed(2))+'%' : '—'; }
-calcP1(); calcP2(); calcP3();
-
-// --- Render ---
-function calcRender() {
-  const one = parseFloat(document.getElementById('r-one').value)||0;
-  const total = parseFloat(document.getElementById('r-total').value)||0;
-  const sec = one * total;
-  document.getElementById('r-sec').textContent = sec.toFixed(0);
-  document.getElementById('r-min').textContent = parseFloat((sec/60).toFixed(1));
-  document.getElementById('r-hr').textContent = parseFloat((sec/3600).toFixed(2));
-  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = Math.floor(sec%60);
-  document.getElementById('r-hms').textContent = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-calcRender();
-
-// --- Speed ---
-function calcSpeed() {
-  const kmh = parseFloat(document.getElementById('kmh').value)||0;
-  const mps = kmh * 1000 / 3600;
-  document.getElementById('mps').textContent = parseFloat(mps.toFixed(2));
-  document.getElementById('t1km').textContent = mps > 0 ? parseFloat((1000/mps).toFixed(2)) + ' 초' : '∞';
-  document.getElementById('m1min').textContent = parseFloat((mps*60).toFixed(1)) + ' m';
-  document.getElementById('t100m').textContent = mps > 0 ? parseFloat((100/mps).toFixed(2)) + ' 초' : '∞';
-}
-calcSpeed();
-
-// --- Work ---
-const witNormal = ['칼퇴를 위한 완벽한 계획이군요.','오늘도 어김없이 퇴근을 향해 달립니다.','퇴근이 보입니다. 조금만 더 버티세요.','이 시간이면 저녁 약속도 문제없겠는데요?','정시 퇴근은 권리입니다. 당당하게 나가세요.','오늘 하루도 수고 많으셨습니다!'];
-const witHalf = ['점심도 안 드시고 일하시다니, 위장이 울고 있어요.','이른 퇴근을 위해 점심도 포기하시다니... 대단합니다.','배고픔은 잠깐, 퇴근의 기쁨은 영원합니다.','점심을 희생한 당신, 오늘 저녁은 맛있는 걸로 드세요.','위장보다 퇴근이 우선인 진정한 프로시군요.'];
-let isHalf = false;
-function fmt(h,m){return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`}
-function addMin(t,mins){const [h,m]=t.split(':').map(Number),total=h*60+m+mins;return fmt(Math.floor(total/60)%24,total%60);}
-function toggleHalf() {
-  isHalf = !isHalf;
-  document.getElementById('half-card').classList.toggle('on', isHalf);
-  document.getElementById('chk-box').textContent = isHalf ? '✓' : '';
-  calcWork();
-}
-function calcWork() {
-  const inTime = document.getElementById('work-in').value || '09:00';
-  const V = parseFloat(document.getElementById('work-hrs').value)||8;
-  const W = parseFloat(document.getElementById('lunch-hrs').value)||1;
-  const totalMins = Math.round((isHalf ? V/2 : V+W)*60);
-  document.getElementById('out-time').textContent = addMin(inTime, totalMins);
-  document.getElementById('work-desc').textContent = isHalf ? `반차 — 근로시간 ${V}시간의 절반, 점심 포기` : `근로시간 ${V}시간 + 점심 ${W}시간`;
-  const pool = isHalf ? witHalf : witNormal;
-  document.getElementById('wit-msg').textContent = pool[Math.floor(Math.random()*pool.length)];
-  updateCountdown();
-}
-
-function updateCountdown() {
-  const outTimeStr = document.getElementById('out-time').textContent;
-  if (!outTimeStr || outTimeStr === '--:--') return;
-  const now = new Date();
-  const [oh, om] = outTimeStr.split(':').map(Number);
-  const outDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), oh, om, 0);
-  const diffMs = outDate - now;
-  const el = document.getElementById('countdown-time');
-  const sub = document.getElementById('countdown-sub');
-  if (diffMs <= 0) {
-    el.textContent = '🎉';
-    el.style.fontSize = '40px';
-    sub.textContent = '퇴근하셨나요? 수고 많으셨어요!';
-    return;
-  }
-  el.style.fontSize = '36px';
-  const totalSec = Math.floor(diffMs / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  const nowStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-  sub.textContent = `현재 ${nowStr} 기준`;
-}
-
-document.getElementById('work-in').addEventListener('input', calcWork);
-document.getElementById('work-hrs').addEventListener('input', calcWork);
-document.getElementById('lunch-hrs').addEventListener('input', calcWork);
-calcWork();
-setInterval(updateCountdown, 1000);
-
-// --- MM ---
-function calcMM() {
-  const days = parseFloat(document.getElementById('mm-days').value)||0;
-  const avg = parseFloat(document.getElementById('mm-avg').value)||21.4;
-  document.getElementById('mm-res').textContent = parseFloat((days/avg).toFixed(2));
-}
-calcMM();
-
-// --- Path ---
-function calcPath() {
-  const server = document.getElementById('server-mac').value.trim() || 'server';
-  const raw = document.getElementById('path-input').value.trim();
-  if (!raw) {
-    document.getElementById('unc-result').textContent = '...';
-    document.getElementById('smb-result').textContent = '...';
-    document.getElementById('share-preview').textContent = '...';
-    document.getElementById('path-reset-hint').style.display = 'none';
-    document.getElementById('path-icard').style.display = 'flex';
-    document.getElementById('path-input-display').style.display = 'none';
-    return;
-  }
-  let pathOnly;
-  if (raw.startsWith('\\\\') || raw.startsWith('//')) {
-    const cleaned = raw.replace(/^[\\\/]+/, '');
-    pathOnly = cleaned.split(/[\\\/]/).slice(1).join('/');
-  } else if (raw.startsWith('smb://')) {
-    const noProto = raw.replace('smb://', '');
-    // %20 → 공백 디코딩
-    pathOnly = decodeURIComponent(noProto.split('/').slice(1).join('/'));
-  } else {
-    pathOnly = raw.replace(/\\/g, '/').replace(/^\//, '');
-  }
-  // Win 경로는 공백 그대로, Mac 경로는 %20 인코딩
-  const winPath = pathOnly.replace(/\//g, '\\');
-  const macPath = pathOnly.replace(/ /g, '%20');
-  document.getElementById('unc-result').textContent = '\\\\' + server + '\\' + winPath;
-  document.getElementById('smb-result').textContent = 'smb://' + server + '/' + macPath;
-  document.getElementById('share-preview').textContent = '🍎  smb://' + server + '/' + macPath + '\n🪟  ' + '\\\\' + server + '\\' + winPath;
-  // 입력 필드 → 텍스트 표시로 전환
-  document.getElementById('path-icard').style.display = 'none';
-  document.getElementById('path-input-display').style.display = 'block';
-  document.getElementById('path-input-display').textContent = raw;
-  document.getElementById('path-reset-hint').style.display = 'inline';
-}
-
-function autoCopyOnPaste(raw, server) {
-  const isWin = raw.startsWith('\\') || raw.startsWith('//') || (raw.includes('\\') && !raw.startsWith('smb://'));
-  const isMac = raw.startsWith('smb://') || raw.startsWith('/');
-  const msg = document.getElementById('auto-copy-msg');
-
-  if (isWin) {
-    // Win 경로 붙여넣기 → Mac 경로 자동 복사
-    const smb = document.getElementById('smb-result').textContent;
-    if (smb === '...') return;
-    const encoded = smb.replace(/ /g, '%20');
-    copyToClipboard(encoded).then(() => {
-      msg.style.display = 'block';
-      msg.style.background = 'var(--accent-bg)';
-      msg.style.color = 'var(--accent)';
-      msg.textContent = '🍎 Mac Finder 경로가 클립보드에 복사됐어요!';
-      setTimeout(() => { msg.style.display = 'none'; }, 3000);
-    });
-  } else if (isMac) {
-    // Mac 경로 붙여넣기 → Win 경로 자동 복사
-    const unc = document.getElementById('unc-result').textContent;
-    if (unc === '...') return;
-    copyToClipboard(unc).then(() => {
-      msg.style.display = 'block';
-      msg.style.background = 'var(--accent-bg)';
-      msg.style.color = 'var(--accent)';
-      msg.textContent = '🪟 Windows 탐색기 경로가 클립보드에 복사됐어요!';
-      setTimeout(() => { msg.style.display = 'none'; }, 3000);
-    });
-  }
-}
-
-function resetPathInput() {
-  document.getElementById('path-input').value = '';
-  document.getElementById('path-icard').style.display = 'flex';
-  document.getElementById('path-input-display').style.display = 'none';
-  document.getElementById('path-reset-hint').style.display = 'none';
-  document.getElementById('unc-result').textContent = '...';
-  document.getElementById('smb-result').textContent = '...';
-  document.getElementById('share-preview').textContent = '...';
-  // 복사 버튼 초기화
-  ['unc-btn','smb-btn','share-btn'].forEach(id => {
-    const btn = document.getElementById(id);
-    btn.textContent = '복사';
-    btn.classList.remove('copied');
-  });
-  document.getElementById('auto-copy-msg').style.display = 'none';
-  setTimeout(() => document.getElementById('path-input').focus(), 50);
-}
-
-function copyPathOnly(id, btnId) {
-  let text = document.getElementById(id).textContent;
-  if (text === '...' || text === '—') return;
-  if (text.startsWith('smb://')) text = text.replace(/ /g, '%20');
-  copyToClipboard(text).then(() => {
-    const btn = document.getElementById(btnId);
-    btn.textContent = '완료!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1000);
-  });
-}
-
-function copySharePath() {
-  const win = document.getElementById('unc-result').textContent;
-  const mac = document.getElementById('smb-result').textContent;
-  if (win === '...' || mac === '...') return;
-  const macEncoded = mac.replace(/ /g, '%20');
-  const htmlText  = '🍎<br><pre>' + macEncoded + '</pre>🪟<br><pre>' + win + '</pre>';
-  const plainText = '🍎  ' + macEncoded + '\n🪟  ' + win;
-  copyToClipboard(plainText, htmlText).then(() => {
-    const btn = document.getElementById('share-btn');
-    btn.textContent = '완료';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
-  });
-}
-
-calcPath();
-
-// 붙여넣기 감지 → 자동 변환 + 복사
-document.getElementById('path-input').addEventListener('paste', function(e) {
-  const raw = (e.clipboardData || window.clipboardData).getData('text').trim();
-  if (!raw) return;
-  const isWin = raw.startsWith('\\\\') || raw.startsWith('//');
-  const isMac = raw.startsWith('smb://') || (raw.startsWith('/') && !raw.startsWith('//'));
-  if (!isWin && !isMac) return;
-
-  // 1. 입력 필드에 값 세팅 후 변환
-  this.value = raw;
-  calcPath();
-
-  // 2. 변환된 결과값을 직접 가져와서 paste 이벤트 컨텍스트 안에서 복사
-  let copyText, btnId;
-  if (isWin) {
-    copyText = document.getElementById('smb-result').textContent;
-    if (copyText && copyText !== '...') copyText = copyText.replace(/ /g, '%20');
-    btnId = 'smb-btn';
-  } else {
-    copyText = document.getElementById('unc-result').textContent;
-    btnId = 'unc-btn';
-  }
-  if (!copyText || copyText === '...') return;
-
-  copyToClipboard(copyText).then(() => {
-    const btn = document.getElementById(btnId);
-    btn.textContent = '완료 ✓';
-    btn.classList.add('copied');
-    const msg = document.getElementById('auto-copy-msg');
-    msg.style.display = 'block';
-    msg.style.background = 'var(--accent-bg)';
-    msg.style.color = 'var(--accent)';
-    msg.textContent = isWin ? '🍎 Mac Finder 경로가 클립보드에 복사됐어요!' : '🪟 Windows 탐색기 경로가 클립보드에 복사됐어요!';
-  });
-});
-
-// --- Custom spin buttons ---
-function addSpinButtons() {
-  document.querySelectorAll('input[type=number]').forEach(input => {
-    if (input.closest('.num-wrap')) return; // already wrapped
-    const step = parseFloat(input.step) || 1;
-    const wrapper = document.createElement('div');
-    wrapper.className = 'num-wrap';
-    input.parentNode.insertBefore(wrapper, input);
-    wrapper.appendChild(input);
-    const btns = document.createElement('div');
-    btns.className = 'spin-btns';
-    const up = document.createElement('button');
-    up.className = 'spin-btn';
-    up.innerHTML = '▲';
-    up.type = 'button';
-    up.addEventListener('mousedown', e => { e.preventDefault(); });
-    up.addEventListener('click', () => {
-      input.value = (parseFloat(input.value)||0) + step;
-      input.dispatchEvent(new Event('input', {bubbles:true}));
-    });
-    const dn = document.createElement('button');
-    dn.className = 'spin-btn';
-    dn.innerHTML = '▼';
-    dn.type = 'button';
-    dn.addEventListener('mousedown', e => { e.preventDefault(); });
-    dn.addEventListener('click', () => {
-      const min = input.min !== '' ? parseFloat(input.min) : -Infinity;
-      const newVal = (parseFloat(input.value)||0) - step;
-      input.value = newVal < min ? min : newVal;
-      input.dispatchEvent(new Event('input', {bubbles:true}));
-    });
-    btns.appendChild(up);
-    btns.appendChild(dn);
-    wrapper.appendChild(btns);
-  });
-}
-addSpinButtons();
-
-// --- 입력필드 focus/blur (클릭하면 비워지고, 나가면 복원) ---
-function applyFocusClear() {
-  const EXCLUDE_IDS = ['path-input', 'hex-in', 'server-mac', 'dpi-custom'];
-  const EXCLUDE_TYPES = ['time', 'color', 'range'];
-  document.querySelectorAll('input[type=number], input[type=text]').forEach(input => {
-    if (EXCLUDE_IDS.includes(input.id)) return;
-    if (EXCLUDE_TYPES.includes(input.type)) return;
-    input.addEventListener('focus', function() {
-      this.dataset.prev = this.value;
-      this.value = '';
-    });
-    input.addEventListener('blur', function() {
-      if (this.value === '' || isNaN(parseFloat(this.value))) {
-        this.value = this.dataset.prev || '';
-        this.dispatchEvent(new Event('input', {bubbles: true}));
-      }
-    });
-  });
-}
-applyFocusClear();
-
-// --- 저장/복원 (Cookie + LocalStorage 둘 다 사용, Safari 대응) ---
-const LS_KEY = 'vi_team_converter';
-const SAVE_IDS = ['server-mac', 'work-in', 'work-hrs', 'lunch-hrs'];
-const COOKIE_DAYS = 365;
-
-function setCookie(name, value, days) {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
-}
-function getCookie(name) {
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-function deleteCookie(name) {
-  document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-}
-function setStorage(key, value) {
-  try { localStorage.setItem(key, value); } catch(e) {}
-  setCookie(key, value, COOKIE_DAYS);
-}
-function getStorage(key) {
-  let val = null;
-  try { val = localStorage.getItem(key); } catch(e) {}
-  if (!val) val = getCookie(key);
-  return val;
-}
-function removeStorage(key) {
-  try { localStorage.removeItem(key); } catch(e) {}
-  deleteCookie(key);
-}
-
-function saveToStorage() {
-  const data = {};
-  SAVE_IDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) data[id] = el.value;
-  });
-  setStorage(LS_KEY, JSON.stringify(data));
-}
-
-function saveLastTab(tab) {
-  setStorage('vi_last_tab', tab);
-}
-
-function loadFromStorage() {
-  try {
-    const raw = getStorage(LS_KEY);
-    if (raw) {
-      const data = JSON.parse(raw);
-      SAVE_IDS.forEach(id => {
-        const el = document.getElementById(id);
-        if (el && data[id] !== undefined && data[id] !== '') el.value = data[id];
+        if (editMode) {
+          btn.className += ' edit-mode';
+          btn.draggable = true;
+          btn.innerHTML = `<span class="drag-handle">⠿</span><span class="icon">${info.icon}</span>${info.label}<button class="toggle-btn ${isHidden ? '' : 'on'}" data-tab="${tab}" onclick="event.stopPropagation();toggleTabVisibility('${tab}')"></button>`;
+          btn.addEventListener('dragstart', onDragStart);
+          btn.addEventListener('dragover', onDragOver);
+          btn.addEventListener('dragleave', onDragLeave);
+          btn.addEventListener('drop', onDrop);
+          btn.addEventListener('dragend', onDragEnd);
+        } else {
+          if (isHidden) return;
+          btn.innerHTML = `<span class="icon">${info.icon}</span>${info.label}`;
+          btn.addEventListener('click', () => switchTab(tab));
+        }
+        list.appendChild(btn);
       });
     }
-    calcPath();
-    calcWork();
-  } catch(e) { console.warn('저장값 복원 실패', e); }
-  const lastTab = getStorage('vi_last_tab') || 'path';
-  switchTab(lastTab);
-}
 
-SAVE_IDS.forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('input', saveToStorage);
-});
-loadFromStorage();
+    function switchTab(tab) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + tab).classList.add('active');
+      saveLastTab(tab);
+      renderNav();
+    }
 
-function resetStorage() {
-  removeStorage(LS_KEY);
-  // 탭 설정 초기화
-  removeStorage('vi_tab_order');
-  removeStorage('vi_tab_hidden');
-  removeStorage('vi_last_tab');
-  tabOrder = ALL_TABS.map(t => t.tab);
-  hiddenTabs = ['frame', 'color', 'speed', 'mm'];
-  const defaults = {
-    'server-mac': 'trplsrv',
-    'work-in': '09:00',
-    'work-hrs': '8',
-    'lunch-hrs': '1',
-  };
-  SAVE_IDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && defaults[id] !== undefined) {
-      el.value = defaults[id];
-      el.dispatchEvent(new Event('input', {bubbles: true}));
-    }
-  });
-  calcPath();
-  calcWork();
-  renderNav();
-  switchTab('path');
-  alert('기본값으로 초기화됐어요.');
-}
-
-// --- .lottie 변환기 ---
-(function() {
-  function crc32(buf) {
-    const t = new Uint32Array(256);
-    for (let i = 0; i < 256; i++) { let c = i; for (let j = 0; j < 8; j++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[i] = c; }
-    let crc = 0xffffffff;
-    for (let i = 0; i < buf.length; i++) crc = t[(crc ^ buf[i]) & 0xff] ^ (crc >>> 8);
-    return (crc ^ 0xffffffff) >>> 0;
-  }
-  function createZip(files) {
-    const entries = []; let offset = 0; const locals = [];
-    for (const f of files) {
-      const nb = new TextEncoder().encode(f.name);
-      const crc = crc32(f.data); const rawSz = f.data.length;
-      const compressed = pako.deflateRaw(f.data, { level: 9 });
-      const compSz = compressed.length;
-      const hdr = new Uint8Array(30 + nb.length + compSz);
-      const v = new DataView(hdr.buffer);
-      v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(6, 0, true);
-      v.setUint16(8, 8, true); v.setUint16(10, 0, true); v.setUint16(12, 0, true);
-      v.setUint32(14, crc, true); v.setUint32(18, compSz, true); v.setUint32(22, rawSz, true);
-      v.setUint16(26, nb.length, true); v.setUint16(28, 0, true);
-      hdr.set(nb, 30); hdr.set(compressed, 30 + nb.length);
-      entries.push({ nb, crc, rawSz, compSz, offset }); locals.push(hdr); offset += hdr.length;
-    }
-    const centrals = [];
-    for (const e of entries) {
-      const c = new Uint8Array(46 + e.nb.length); const v = new DataView(c.buffer);
-      v.setUint32(0, 0x02014b50, true); v.setUint16(4, 20, true); v.setUint16(6, 20, true);
-      v.setUint16(8, 0, true); v.setUint16(10, 8, true); v.setUint16(12, 0, true); v.setUint16(14, 0, true);
-      v.setUint32(16, e.crc, true); v.setUint32(20, e.compSz, true); v.setUint32(24, e.rawSz, true);
-      v.setUint16(28, e.nb.length, true); v.setUint32(42, e.offset, true); c.set(e.nb, 46); centrals.push(c);
-    }
-    const csz = centrals.reduce((s, c) => s + c.length, 0);
-    const eocdr = new Uint8Array(22); const ev = new DataView(eocdr.buffer);
-    ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, entries.length, true);
-    ev.setUint16(10, entries.length, true); ev.setUint32(12, csz, true); ev.setUint32(16, offset, true);
-    const total = new Uint8Array(offset + csz + 22); let p = 0;
-    for (const l of locals) { total.set(l, p); p += l.length; }
-    for (const c of centrals) { total.set(c, p); p += c.length; }
-    total.set(eocdr, p); return total;
-  }
-  function jsonToDotLottie(jsonStr, id) {
-    const enc = new TextEncoder();
-    const manifest = JSON.stringify({ generator: "json-to-lottie-converter", version: "1.0", animations: [{ id, speed: 1, loop: true, autoplay: true }] });
-    return createZip([{ name: "manifest.json", data: enc.encode(manifest) }, { name: `animations/${id}.json`, data: enc.encode(jsonStr) }]);
-  }
-  function fmtSize(b) {
-    if (b < 1024) return b + " B";
-    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + " KB";
-    return (b / (1024 * 1024)).toFixed(1) + " MB";
-  }
-  function ltDownload(blob, name) {
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href);
-  }
-  function bundleZip(fileList) {
-    return Promise.all(fileList.map(f => f.blob.arrayBuffer().then(buf => ({ name: f.outName, data: new Uint8Array(buf) })))).then(zf => {
-      const entries = []; let offset = 0; const locals = [];
-      for (const f of zf) {
-        const nb = new TextEncoder().encode(f.name); const crc = crc32(f.data); const sz = f.data.length;
-        const hdr = new Uint8Array(30 + nb.length + sz); const v = new DataView(hdr.buffer);
-        v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(8, 0, true);
-        v.setUint32(14, crc, true); v.setUint32(18, sz, true); v.setUint32(22, sz, true); v.setUint16(26, nb.length, true);
-        hdr.set(nb, 30); hdr.set(f.data, 30 + nb.length); entries.push({ nb, crc, sz, offset }); locals.push(hdr); offset += hdr.length;
+    function toggleTabVisibility(tab) {
+      if (hiddenTabs.includes(tab)) {
+        hiddenTabs = hiddenTabs.filter(t => t !== tab);
+      } else {
+        hiddenTabs.push(tab);
       }
-      const centrals = [];
-      for (const e of entries) {
-        const c = new Uint8Array(46 + e.nb.length); const v = new DataView(c.buffer);
-        v.setUint32(0, 0x02014b50, true); v.setUint16(4, 20, true); v.setUint16(6, 20, true);
-        v.setUint32(16, e.crc, true); v.setUint32(20, e.sz, true); v.setUint32(24, e.sz, true);
-        v.setUint16(28, e.nb.length, true); v.setUint32(42, e.offset, true); c.set(e.nb, 46); centrals.push(c);
-      }
-      const csz = centrals.reduce((s, c) => s + c.length, 0);
-      const eocdr = new Uint8Array(22); const ev = new DataView(eocdr.buffer);
-      ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, entries.length, true);
-      ev.setUint16(10, entries.length, true); ev.setUint32(12, csz, true); ev.setUint32(16, offset, true);
-      const total = new Uint8Array(offset + csz + 22); let p = 0;
-      for (const l of locals) { total.set(l, p); p += l.length; }
-      for (const c of centrals) { total.set(c, p); p += c.length; }
-      total.set(eocdr, p); return new Blob([total], { type: "application/zip" });
-    });
-  }
-
-  let ltFiles = []; let ltIdCounter = 0; let ltBatchIndex = 0; const LT_BATCH = 10; let ltBatchRunning = false;
-
-  function ltRender() {
-    const listArea = document.getElementById('lt-listArea');
-    const fileList = document.getElementById('lt-fileList');
-    const actionsDiv = document.getElementById('lt-actions');
-    const countLabel = document.getElementById('lt-countLabel');
-    if (!listArea) return;
-    listArea.style.display = ltFiles.length ? '' : 'none';
-    const done = ltFiles.filter(f => f.status === 'done').length;
-    const downloaded = ltFiles.filter(f => f.status === 'downloaded').length;
-    const pending = ltFiles.filter(f => f.status === 'pending').length;
-    const doneTotal = done + downloaded;
-    let label = ltFiles.length + '개 파일';
-    if (doneTotal > 0) label += ' · ' + doneTotal + '개 변환됨';
-    if (downloaded > 0) label += ' · ' + downloaded + '개 다운로드됨';
-    countLabel.textContent = label;
-    fileList.innerHTML = '';
-    let num = 0;
-    for (const f of ltFiles) {
-      num++;
-      const div = document.createElement('div');
-      div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg3);transition:all .2s';
-      if (f.status === 'done') div.style.background = 'rgba(16,185,129,0.06)', div.style.borderColor = 'rgba(16,185,129,0.2)', div.style.cursor = 'pointer';
-      if (f.status === 'downloaded') div.style.background = 'rgba(99,102,241,0.06)', div.style.borderColor = 'rgba(99,102,241,0.15)', div.style.opacity = '0.7', div.style.cursor = 'pointer';
-      const icon = f.status === 'downloaded' ? '↓' : f.status === 'done' ? '✓' : f.status === 'error' ? '✗' : '◇';
-      const statusColor = { pending: 'var(--text3)', done: '#10b981', downloaded: '#6366f1', error: '#ef4444' }[f.status];
-      const statusLabel = { pending: '대기 중', done: '완료', downloaded: '다운로드됨', error: '오류' }[f.status];
-      div.innerHTML = `<span style="font-size:11px;color:var(--text3);font-weight:600;min-width:20px;text-align:right">${num}</span><span style="font-size:16px;opacity:0.7">${icon}</span><div style="flex:1;min-width:0"><div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</div><div style="font-size:11px;color:var(--text3)">${f.size}${f.outSize ? ' → ' + f.outSize : ''}</div></div><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:${statusColor};flex-shrink:0">${statusLabel}</span>`;
-      if (f.status === 'pending') {
-        const btn = document.createElement('button');
-        btn.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px';
-        btn.textContent = '×';
-        btn.onclick = (e) => { e.stopPropagation(); ltFiles = ltFiles.filter(x => x.id !== f.id); ltRender(); };
-        div.appendChild(btn);
-      }
-      if (f.status === 'done' || f.status === 'downloaded') div.onclick = () => { ltDownload(f.blob, f.outName); f.status = 'downloaded'; ltRender(); };
-      fileList.appendChild(div);
+      saveTabSettings();
+      renderNav();
     }
-    actionsDiv.innerHTML = '';
-    if (pending > 0) {
-      const btn = document.createElement('button');
-      btn.style.cssText = 'flex:1;padding:12px;border-radius:var(--radius-md);border:none;background:linear-gradient(135deg,#06b6d4,#8b5cf6);color:#fff;font-size:14px;font-weight:600;cursor:pointer';
-      btn.textContent = pending + '개 파일 변환';
-      btn.onclick = ltConvert;
-      actionsDiv.appendChild(btn);
+
+    function toggleEditMode() {
+      editMode = !editMode;
+      const btn = document.getElementById('edit-btn');
+      btn.textContent = editMode ? '완료' : '편집';
+      btn.classList.toggle('active', editMode);
+      renderNav();
     }
-    if (doneTotal > 0) {
-      const btnAll = document.createElement('button');
-      btnAll.style.cssText = 'flex:1;padding:12px;border-radius:var(--radius-md);border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#10b981;font-size:14px;font-weight:600;cursor:pointer';
-      btnAll.textContent = '전체 ZIP (' + doneTotal + '개)';
-      btnAll.onclick = () => {
-        const df = ltFiles.filter(f => (f.status==='done'||f.status==='downloaded') && f.blob);
-        if (df.length === 1) { ltDownload(df[0].blob, df[0].outName); return; }
-        bundleZip(df).then(blob => ltDownload(blob, 'lottie_files.zip'));
+
+    // --- Drag & Drop ---
+    function onDragStart(e) {
+      dragSrc = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+    function onDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (this !== dragSrc) this.classList.add('drag-over');
+    }
+    function onDragLeave() { this.classList.remove('drag-over'); }
+    function onDrop(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+      if (this === dragSrc) return;
+      const from = tabOrder.indexOf(dragSrc.dataset.tab);
+      const to = tabOrder.indexOf(this.dataset.tab);
+      if (from < 0 || to < 0) return;
+      tabOrder.splice(from, 1);
+      tabOrder.splice(to, 0, dragSrc.dataset.tab);
+      saveTabSettings();
+      renderNav();
+    }
+    function onDragEnd() {
+      document.querySelectorAll('.nav-item').forEach(n => {
+        n.classList.remove('dragging', 'drag-over');
+      });
+    }
+
+    // Init sidebar
+    loadTabSettings();
+    renderNav();
+
+    // --- Copy ---
+    function copyToClipboard(text, html) {
+      if (navigator.clipboard && window.isSecureContext) {
+        if (html && typeof ClipboardItem !== 'undefined') {
+          const plainBlob = new Blob([text], { type: 'text/plain' });
+          const htmlBlob = new Blob([html], { type: 'text/html' });
+          return navigator.clipboard.write([
+            new ClipboardItem({
+              'text/plain': Promise.resolve(plainBlob),
+              'text/html': Promise.resolve(htmlBlob)
+            })
+          ]);
+        }
+        if (typeof ClipboardItem !== 'undefined') {
+          // Safari: Promise를 ClipboardItem에 감싸서 동기 컨텍스트 유지
+          return navigator.clipboard.write([
+            new ClipboardItem({
+              'text/plain': Promise.resolve(new Blob([text], { type: 'text/plain' }))
+            })
+          ]);
+        }
+        return navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        return Promise.resolve();
+      }
+    }
+    function copyText(id, btnId) {
+      const text = document.getElementById(id).textContent;
+      if (text === '—' || text === '...') return;
+      copyToClipboard(text).then(() => {
+        const btn = document.getElementById(btnId);
+        btn.textContent = '완료';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
+      });
+    }
+
+    // --- Frame ---
+    let activeFrameUnit = 'frame';
+    function getFps() { return parseFloat(document.getElementById('fps-sel').value) || 60; }
+    function round10(ms) { return Math.round(Math.round(ms) * 0.1) * 10; }
+    function toMsec(val, unit) {
+      const fps = getFps();
+      if (unit === 'frame') return val / fps * 1000;
+      if (unit === 'msec') return val;
+      if (unit === 'sec') return val * 1000;
+      return 0;
+    }
+    function fromMsec(ms, unit) {
+      const fps = getFps();
+      if (unit === 'frame') return ms / 1000 * fps;
+      if (unit === 'msec') return ms;
+      if (unit === 'sec') return ms / 1000;
+      return 0;
+    }
+    function selectFrameUnit(unit) {
+      activeFrameUnit = unit;
+      document.querySelectorAll('#panel-frame .unit-row').forEach(r => r.classList.toggle('active', r.dataset.unit === unit));
+    }
+    function onFrameInput(unit) {
+      selectFrameUnit(unit);
+      const val = parseFloat(document.getElementById('val-' + unit).value);
+      if (isNaN(val)) return;
+      const ms = toMsec(val, unit);
+      ['frame', 'msec', 'sec'].forEach(u => {
+        if (u === unit) return;
+        const v = fromMsec(ms, u);
+        document.getElementById('val-' + u).value = u === 'frame' ? parseFloat(v.toFixed(2)) : u === 'msec' ? parseFloat(v.toFixed(2)) : parseFloat(v.toFixed(4));
+      });
+    }
+    function buildRef() {
+      const fps = getFps();
+      document.getElementById('ref-fps-label').textContent = `${fps}fps (1~${fps} frame)`;
+      const tbody = document.getElementById('ref-body');
+      tbody.innerHTML = '';
+      for (let i = 1; i <= fps; i++) {
+        const ms = i / fps * 1000;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i}</td><td>${round10(ms)}</td><td>${parseFloat(ms.toFixed(2))}</td><td>${parseFloat((ms / 1000).toFixed(4))}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+    function onFpsChange() { buildRef(); onFrameInput(activeFrameUnit); }
+    buildRef();
+    document.getElementById('val-frame').value = '1';
+    onFrameInput('frame');
+
+    // --- Unit ---
+    let activeUnitU = 'dp';
+    function getDpi() { return parseFloat(document.getElementById('dpi-custom').value) || 160; }
+    function toPx(val, unit) {
+      const dpi = getDpi(), d = dpi / 160;
+      if (unit === 'dp' || unit === 'sp') return val * d;
+      if (unit === 'px') return val;
+      if (unit === 'mm') return val * dpi / 25.4;
+      if (unit === 'pt') return val * dpi / 72;
+      if (unit === 'in') return val * dpi;
+      return 0;
+    }
+    function fromPx(px, unit) {
+      const dpi = getDpi(), d = dpi / 160;
+      if (unit === 'dp' || unit === 'sp') return px / d;
+      if (unit === 'px') return px;
+      if (unit === 'mm') return px * 25.4 / dpi;
+      if (unit === 'pt') return px * 72 / dpi;
+      if (unit === 'in') return px / dpi;
+      return 0;
+    }
+    function selectUnitU(unit) {
+      activeUnitU = unit;
+      document.querySelectorAll('#panel-unit .unit-row').forEach(r => r.classList.toggle('active', r.dataset.unit === unit));
+    }
+    function onUnitInput(unit) {
+      selectUnitU(unit);
+      const val = parseFloat(document.getElementById('u-' + unit).value);
+      if (isNaN(val)) return;
+      const px = toPx(val, unit);
+      ['dp', 'sp', 'px', 'mm', 'pt', 'in'].forEach(u => {
+        if (u === unit) return;
+        const v = fromPx(px, u);
+        document.getElementById('u-' + u).value = u === 'in' ? parseFloat(v.toFixed(4)) : u === 'mm' ? parseFloat(v.toFixed(3)) : parseFloat(v.toFixed(2));
+      });
+    }
+
+    function onDpiPreset() {
+      const sel = document.getElementById('dpi-sel');
+      if (sel.value === 'custom') return;
+      document.getElementById('dpi-custom').value = sel.value;
+      onUnitInput(activeUnitU);
+    }
+    function onDpiCustom() {
+      // 직접 입력 시 프리셋을 Custom으로 표시
+      const customVal = parseFloat(document.getElementById('dpi-custom').value);
+      const sel = document.getElementById('dpi-sel');
+      const presets = [120, 160, 240, 320, 480, 640];
+      if (presets.includes(customVal)) {
+        sel.value = String(customVal);
+      } else {
+        sel.value = 'custom';
+      }
+      onUnitInput(activeUnitU);
+    }
+    function onDpiChange() { onUnitInput(activeUnitU); }
+    document.getElementById('u-dp').value = '1';
+    onUnitInput('dp');
+
+    // --- Color ---
+    function copyHex() {
+      const hex = '#' + document.getElementById('hex-in').value.replace('#', '').trim().toUpperCase();
+      copyToClipboard(hex).then(() => {
+        const btn = document.getElementById('hex-copy-btn');
+        btn.textContent = '완료';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
+      });
+    }
+    // --- Color picker ---
+    function updateAE(r, g, b, a) {
+      const av = parseFloat((a / 100).toFixed(3));
+      document.getElementById('ae-val').textContent =
+        `[${parseFloat((r / 255).toFixed(3))}, ${parseFloat((g / 255).toFixed(3))}, ${parseFloat((b / 255).toFixed(3))}, ${parseFloat(av.toFixed(3))}]`;
+    }
+    function calcColor() {
+      let hex = document.getElementById('hex-in').value.replace('#', '').trim();
+      if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+      if (hex.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(hex)) return;
+      const r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16), b = parseInt(hex.slice(4, 6), 16);
+      const a = Number(document.getElementById('a-val').value);
+      document.getElementById('r-val').value = r;
+      document.getElementById('g-val').value = g;
+      document.getElementById('b-val').value = b;
+      document.getElementById('color-preview').style.background = '#' + hex;
+      document.getElementById('color-picker').value = '#' + hex;
+      updateAE(r, g, b, a);
+    }
+    function calcColorFromRGB() {
+      const clamp = id => {
+        const el = document.getElementById(id);
+        let v = parseInt(el.value) || 0;
+        v = Math.min(255, Math.max(0, v));
+        el.value = v;
+        return v;
       };
-      actionsDiv.appendChild(btnAll);
+      const r = clamp('r-val'), g = clamp('g-val'), b = clamp('b-val');
+      const a = Number(document.getElementById('a-val').value);
+      document.getElementById('a-pct').textContent = a;
+      const hex = [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+      document.getElementById('hex-in').value = hex;
+      document.getElementById('color-preview').style.background = '#' + hex;
+      document.getElementById('color-picker').value = '#' + hex;
+      updateAE(r, g, b, a);
     }
-  }
+    function calcColorFromPicker() {
+      const hex = document.getElementById('color-picker').value.replace('#', '');
+      document.getElementById('hex-in').value = hex.toUpperCase();
+      calcColor();
+    }
+    calcColor();
 
-  async function ltConvert() {
-    ltBatchIndex = 0;
-    const pending = ltFiles.filter(f => f.status === 'pending');
-    for (const item of pending) {
+    // --- Percent ---
+    function calcP1() { const a = parseFloat(document.getElementById('p1a').value) || 0, b = parseFloat(document.getElementById('p1b').value) || 0; document.getElementById('p1-res').textContent = parseFloat((a * b / 100).toFixed(4)); }
+    function calcP2() { const a = parseFloat(document.getElementById('p2a').value) || 0, b = parseFloat(document.getElementById('p2b').value) || 0; document.getElementById('p2-res').textContent = a ? parseFloat(((b - a) / a * 100).toFixed(2)) + '%' : '—'; }
+    function calcP3() { const a = parseFloat(document.getElementById('p3a').value) || 0, b = parseFloat(document.getElementById('p3b').value) || 1; document.getElementById('p3-res').textContent = b ? parseFloat((a / b * 100).toFixed(2)) + '%' : '—'; }
+    calcP1(); calcP2(); calcP3();
+
+    // --- Render ---
+    function calcRender() {
+      const one = parseFloat(document.getElementById('r-one').value) || 0;
+      const total = parseFloat(document.getElementById('r-total').value) || 0;
+      const sec = one * total;
+      document.getElementById('r-sec').textContent = sec.toFixed(0);
+      document.getElementById('r-min').textContent = parseFloat((sec / 60).toFixed(1));
+      document.getElementById('r-hr').textContent = parseFloat((sec / 3600).toFixed(2));
+      const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
+      document.getElementById('r-hms').textContent = `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    calcRender();
+
+    // --- Speed ---
+    function calcSpeed() {
+      const kmh = parseFloat(document.getElementById('kmh').value) || 0;
+      const mps = kmh * 1000 / 3600;
+      document.getElementById('mps').textContent = parseFloat(mps.toFixed(2));
+      document.getElementById('t1km').textContent = mps > 0 ? parseFloat((1000 / mps).toFixed(2)) + ' 초' : '∞';
+      document.getElementById('m1min').textContent = parseFloat((mps * 60).toFixed(1)) + ' m';
+      document.getElementById('t100m').textContent = mps > 0 ? parseFloat((100 / mps).toFixed(2)) + ' 초' : '∞';
+    }
+    calcSpeed();
+
+    // --- Work ---
+    const witNormal = ['칼퇴를 위한 완벽한 계획이군요.', '오늘도 어김없이 퇴근을 향해 달립니다.', '퇴근이 보입니다. 조금만 더 버티세요.', '이 시간이면 저녁 약속도 문제없겠는데요?', '정시 퇴근은 권리입니다. 당당하게 나가세요.', '오늘 하루도 수고 많으셨습니다!'];
+    const witHalf = ['점심도 안 드시고 일하시다니, 위장이 울고 있어요.', '이른 퇴근을 위해 점심도 포기하시다니... 대단합니다.', '배고픔은 잠깐, 퇴근의 기쁨은 영원합니다.', '점심을 희생한 당신, 오늘 저녁은 맛있는 걸로 드세요.', '위장보다 퇴근이 우선인 진정한 프로시군요.'];
+    let isHalf = false;
+    function fmt(h, m) { return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}` }
+    function addMin(t, mins) { const [h, m] = t.split(':').map(Number), total = h * 60 + m + mins; return fmt(Math.floor(total / 60) % 24, total % 60); }
+    function toggleHalf() {
+      isHalf = !isHalf;
+      document.getElementById('half-card').classList.toggle('on', isHalf);
+      document.getElementById('chk-box').textContent = isHalf ? '✓' : '';
+      calcWork();
+    }
+    function calcWork() {
+      const inTime = document.getElementById('work-in').value || '09:00';
+      const V = parseFloat(document.getElementById('work-hrs').value) || 8;
+      const W = parseFloat(document.getElementById('lunch-hrs').value) || 1;
+      const totalMins = Math.round((isHalf ? V / 2 : V + W) * 60);
+      document.getElementById('out-time').textContent = addMin(inTime, totalMins);
+      document.getElementById('work-desc').textContent = isHalf ? `반차 — 근로시간 ${V}시간의 절반, 점심 포기` : `근로시간 ${V}시간 + 점심 ${W}시간`;
+      const pool = isHalf ? witHalf : witNormal;
+      document.getElementById('wit-msg').textContent = pool[Math.floor(Math.random() * pool.length)];
+      updateCountdown();
+    }
+
+    function updateCountdown() {
+      const outTimeStr = document.getElementById('out-time').textContent;
+      if (!outTimeStr || outTimeStr === '--:--') return;
+      const now = new Date();
+      const [oh, om] = outTimeStr.split(':').map(Number);
+      const outDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), oh, om, 0);
+      const diffMs = outDate - now;
+      const el = document.getElementById('countdown-time');
+      const sub = document.getElementById('countdown-sub');
+      if (diffMs <= 0) {
+        el.textContent = '🎉';
+        el.style.fontSize = '40px';
+        sub.textContent = '퇴근하셨나요? 수고 많으셨어요!';
+        return;
+      }
+      el.style.fontSize = '36px';
+      const totalSec = Math.floor(diffMs / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      el.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      sub.textContent = `현재 ${nowStr} 기준`;
+    }
+
+    document.getElementById('work-in').addEventListener('input', calcWork);
+    document.getElementById('work-hrs').addEventListener('input', calcWork);
+    document.getElementById('lunch-hrs').addEventListener('input', calcWork);
+    calcWork();
+    setInterval(updateCountdown, 1000);
+
+    // --- MM ---
+    function calcMM() {
+      const days = parseFloat(document.getElementById('mm-days').value) || 0;
+      const avg = parseFloat(document.getElementById('mm-avg').value) || 21.4;
+      document.getElementById('mm-res').textContent = parseFloat((days / avg).toFixed(2));
+    }
+    calcMM();
+
+    // --- Path ---
+    function calcPath() {
+      const server = document.getElementById('server-mac').value.trim() || 'server';
+      const raw = document.getElementById('path-input').value.trim();
+      if (!raw) {
+        document.getElementById('unc-result').textContent = '...';
+        document.getElementById('smb-result').textContent = '...';
+        document.getElementById('share-preview').textContent = '...';
+        document.getElementById('path-reset-hint').style.display = 'none';
+        document.getElementById('path-icard').style.display = 'flex';
+        document.getElementById('path-input-display').style.display = 'none';
+        return;
+      }
+      let pathOnly;
+      if (raw.startsWith('\\\\') || raw.startsWith('//')) {
+        const cleaned = raw.replace(/^[\\\/]+/, '');
+        pathOnly = cleaned.split(/[\\\/]/).slice(1).join('/');
+      } else if (raw.startsWith('smb://')) {
+        const noProto = raw.replace('smb://', '');
+        // %20 → 공백 디코딩
+        pathOnly = decodeURIComponent(noProto.split('/').slice(1).join('/'));
+      } else {
+        pathOnly = raw.replace(/\\/g, '/').replace(/^\//, '');
+      }
+      // Win 경로는 공백 그대로, Mac 경로는 %20 인코딩
+      const winPath = pathOnly.replace(/\//g, '\\');
+      const macPath = pathOnly.replace(/ /g, '%20');
+      document.getElementById('unc-result').textContent = '\\\\' + server + '\\' + winPath;
+      document.getElementById('smb-result').textContent = 'smb://' + server + '/' + macPath;
+      document.getElementById('share-preview').textContent = '🍎  smb://' + server + '/' + macPath + '\n🪟  ' + '\\\\' + server + '\\' + winPath;
+      // 입력 필드 → 텍스트 표시로 전환
+      document.getElementById('path-icard').style.display = 'none';
+      document.getElementById('path-input-display').style.display = 'block';
+      document.getElementById('path-input-display').textContent = raw;
+      document.getElementById('path-reset-hint').style.display = 'inline';
+    }
+
+    function autoCopyOnPaste(raw, server) {
+      const isWin = raw.startsWith('\\') || raw.startsWith('//') || (raw.includes('\\') && !raw.startsWith('smb://'));
+      const isMac = raw.startsWith('smb://') || raw.startsWith('/');
+      const msg = document.getElementById('auto-copy-msg');
+
+      if (isWin) {
+        // Win 경로 붙여넣기 → Mac 경로 자동 복사
+        const smb = document.getElementById('smb-result').textContent;
+        if (smb === '...') return;
+        const encoded = smb.replace(/ /g, '%20');
+        copyToClipboard(encoded).then(() => {
+          msg.style.display = 'block';
+          msg.style.background = 'var(--accent-bg)';
+          msg.style.color = 'var(--accent)';
+          msg.textContent = '🍎 Mac Finder 경로가 클립보드에 복사됐어요!';
+          setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        });
+      } else if (isMac) {
+        // Mac 경로 붙여넣기 → Win 경로 자동 복사
+        const unc = document.getElementById('unc-result').textContent;
+        if (unc === '...') return;
+        copyToClipboard(unc).then(() => {
+          msg.style.display = 'block';
+          msg.style.background = 'var(--accent-bg)';
+          msg.style.color = 'var(--accent)';
+          msg.textContent = '🪟 Windows 탐색기 경로가 클립보드에 복사됐어요!';
+          setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        });
+      }
+    }
+
+    function resetPathInput() {
+      document.getElementById('path-input').value = '';
+      document.getElementById('path-icard').style.display = 'flex';
+      document.getElementById('path-input-display').style.display = 'none';
+      document.getElementById('path-reset-hint').style.display = 'none';
+      document.getElementById('unc-result').textContent = '...';
+      document.getElementById('smb-result').textContent = '...';
+      document.getElementById('share-preview').textContent = '...';
+      // 복사 버튼 초기화
+      ['unc-btn', 'smb-btn', 'share-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        btn.textContent = '복사';
+        btn.classList.remove('copied');
+      });
+      document.getElementById('auto-copy-msg').style.display = 'none';
+      setTimeout(() => document.getElementById('path-input').focus(), 50);
+    }
+
+    function copyPathOnly(id, btnId) {
+      let text = document.getElementById(id).textContent;
+      if (text === '...' || text === '—') return;
+      if (text.startsWith('smb://')) text = text.replace(/ /g, '%20');
+      copyToClipboard(text).then(() => {
+        const btn = document.getElementById(btnId);
+        btn.textContent = '완료!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1000);
+      });
+    }
+
+    function copySharePath() {
+      const win = document.getElementById('unc-result').textContent;
+      const mac = document.getElementById('smb-result').textContent;
+      if (win === '...' || mac === '...') return;
+      const macEncoded = mac.replace(/ /g, '%20');
+      const htmlText = '🍎<br><pre>' + macEncoded + '</pre>🪟<br><pre>' + win + '</pre>';
+      const plainText = '🍎  ' + macEncoded + '\n🪟  ' + win;
+      copyToClipboard(plainText, htmlText).then(() => {
+        const btn = document.getElementById('share-btn');
+        btn.textContent = '완료';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
+      });
+    }
+
+    calcPath();
+
+    // 붙여넣기 감지 → 자동 변환 + 복사
+    document.getElementById('path-input').addEventListener('paste', function (e) {
+      const raw = (e.clipboardData || window.clipboardData).getData('text').trim();
+      if (!raw) return;
+      const isWin = raw.startsWith('\\\\') || raw.startsWith('//');
+      const isMac = raw.startsWith('smb://') || (raw.startsWith('/') && !raw.startsWith('//'));
+      if (!isWin && !isMac) return;
+
+      // 1. 입력 필드에 값 세팅 후 변환
+      this.value = raw;
+      calcPath();
+
+      // 2. 변환된 결과값을 직접 가져와서 paste 이벤트 컨텍스트 안에서 복사
+      let copyText, btnId;
+      if (isWin) {
+        copyText = document.getElementById('smb-result').textContent;
+        if (copyText && copyText !== '...') copyText = copyText.replace(/ /g, '%20');
+        btnId = 'smb-btn';
+      } else {
+        copyText = document.getElementById('unc-result').textContent;
+        btnId = 'unc-btn';
+      }
+      if (!copyText || copyText === '...') return;
+
+      copyToClipboard(copyText).then(() => {
+        const btn = document.getElementById(btnId);
+        btn.textContent = '완료 ✓';
+        btn.classList.add('copied');
+        const msg = document.getElementById('auto-copy-msg');
+        msg.style.display = 'block';
+        msg.style.background = 'var(--accent-bg)';
+        msg.style.color = 'var(--accent)';
+        msg.textContent = isWin ? '🍎 Mac Finder 경로가 클립보드에 복사됐어요!' : '🪟 Windows 탐색기 경로가 클립보드에 복사됐어요!';
+      });
+    });
+
+    // --- Custom spin buttons ---
+    function addSpinButtons() {
+      document.querySelectorAll('input[type=number]').forEach(input => {
+        if (input.closest('.num-wrap')) return; // already wrapped
+        const step = parseFloat(input.step) || 1;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'num-wrap';
+        input.parentNode.insertBefore(wrapper, input);
+        wrapper.appendChild(input);
+        const btns = document.createElement('div');
+        btns.className = 'spin-btns';
+        const up = document.createElement('button');
+        up.className = 'spin-btn';
+        up.innerHTML = '▲';
+        up.type = 'button';
+        up.addEventListener('mousedown', e => { e.preventDefault(); });
+        up.addEventListener('click', () => {
+          input.value = (parseFloat(input.value) || 0) + step;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        const dn = document.createElement('button');
+        dn.className = 'spin-btn';
+        dn.innerHTML = '▼';
+        dn.type = 'button';
+        dn.addEventListener('mousedown', e => { e.preventDefault(); });
+        dn.addEventListener('click', () => {
+          const min = input.min !== '' ? parseFloat(input.min) : -Infinity;
+          const newVal = (parseFloat(input.value) || 0) - step;
+          input.value = newVal < min ? min : newVal;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        btns.appendChild(up);
+        btns.appendChild(dn);
+        wrapper.appendChild(btns);
+      });
+    }
+    addSpinButtons();
+
+    // --- 입력필드 focus/blur (클릭하면 비워지고, 나가면 복원) ---
+    function applyFocusClear() {
+      const EXCLUDE_IDS = ['path-input', 'hex-in', 'server-mac', 'dpi-custom'];
+      const EXCLUDE_TYPES = ['time', 'color', 'range'];
+      document.querySelectorAll('input[type=number], input[type=text]').forEach(input => {
+        if (EXCLUDE_IDS.includes(input.id)) return;
+        if (EXCLUDE_TYPES.includes(input.type)) return;
+        input.addEventListener('focus', function () {
+          this.dataset.prev = this.value;
+          this.value = '';
+        });
+        input.addEventListener('blur', function () {
+          if (this.value === '' || isNaN(parseFloat(this.value))) {
+            this.value = this.dataset.prev || '';
+            this.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        });
+      });
+    }
+    applyFocusClear();
+
+    // --- 저장/복원 (Cookie + LocalStorage 둘 다 사용, Safari 대응) ---
+    const LS_KEY = 'vi_team_converter';
+    const SAVE_IDS = ['server-mac', 'work-in', 'work-hrs', 'lunch-hrs'];
+    const COOKIE_DAYS = 365;
+
+    function setCookie(name, value, days) {
+      const expires = new Date(Date.now() + days * 864e5).toUTCString();
+      document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+    }
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+      return match ? decodeURIComponent(match[1]) : null;
+    }
+    function deleteCookie(name) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+    }
+    function setStorage(key, value) {
+      try { localStorage.setItem(key, value); } catch (e) { }
+      setCookie(key, value, COOKIE_DAYS);
+    }
+    function getStorage(key) {
+      let val = null;
+      try { val = localStorage.getItem(key); } catch (e) { }
+      if (!val) val = getCookie(key);
+      return val;
+    }
+    function removeStorage(key) {
+      try { localStorage.removeItem(key); } catch (e) { }
+      deleteCookie(key);
+    }
+
+    function saveToStorage() {
+      const data = {};
+      SAVE_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) data[id] = el.value;
+      });
+      setStorage(LS_KEY, JSON.stringify(data));
+    }
+
+    function saveLastTab(tab) {
+      setStorage('vi_last_tab', tab);
+    }
+
+    function loadFromStorage() {
       try {
-        const text = await item.file.text();
-        JSON.parse(text);
-        const base = item.name.replace(/\.json$/i, '');
-        const animId = base.replace(/[^a-zA-Z0-9_-]/g, '_');
-        const zip = jsonToDotLottie(text, animId);
-        item.blob = new Blob([zip], { type: 'application/zip' });
-        item.outName = base + '.lottie';
-        const ratio = Math.round(zip.length / item.file.size * 100);
-        item.outSize = fmtSize(zip.length) + ' (' + ratio + '%)';
-        item.status = 'done';
-      } catch(e) { item.status = 'error'; }
-      ltRender();
-      await new Promise(r => setTimeout(r, 50));
+        const raw = getStorage(LS_KEY);
+        if (raw) {
+          const data = JSON.parse(raw);
+          SAVE_IDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && data[id] !== undefined && data[id] !== '') el.value = data[id];
+          });
+        }
+        calcPath();
+        calcWork();
+      } catch (e) { console.warn('저장값 복원 실패', e); }
+      const lastTab = getStorage('vi_last_tab') || 'path';
+      switchTab(lastTab);
     }
-  }
 
-  function ltAddFiles(list) {
-    for (const f of list) {
-      if (!f.name.endsWith('.json')) continue;
-      ltFiles.push({ id: ++ltIdCounter, name: f.name, file: f, size: fmtSize(f.size), status: 'pending', blob: null, outName: '' });
+    SAVE_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', saveToStorage);
+    });
+    loadFromStorage();
+
+    function resetStorage() {
+      removeStorage(LS_KEY);
+      // 탭 설정 초기화
+      removeStorage('vi_tab_order');
+      removeStorage('vi_tab_hidden');
+      removeStorage('vi_last_tab');
+      tabOrder = ALL_TABS.map(t => t.tab);
+      hiddenTabs = ['frame', 'color', 'speed', 'mm'];
+      const defaults = {
+        'server-mac': 'trplsrv',
+        'work-in': '09:00',
+        'work-hrs': '8',
+        'lunch-hrs': '1',
+      };
+      SAVE_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && defaults[id] !== undefined) {
+          el.value = defaults[id];
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+      calcPath();
+      calcWork();
+      renderNav();
+      switchTab('path');
+      alert('기본값으로 초기화됐어요.');
     }
-    ltRender();
-  }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const dz = document.getElementById('lt-dropzone');
-    const fi = document.getElementById('lt-fileInput');
-    const cb = document.getElementById('lt-clearBtn');
-    if (!dz) return;
-    dz.onclick = () => fi.click();
-    fi.onchange = (e) => { ltAddFiles(e.target.files); e.target.value = ''; };
-    dz.ondragover = (e) => { e.preventDefault(); dz.style.borderColor = 'var(--accent)'; dz.style.background = 'var(--accent-bg)'; };
-    dz.ondragleave = () => { dz.style.borderColor = ''; dz.style.background = ''; };
-    dz.ondrop = (e) => { e.preventDefault(); dz.style.borderColor = ''; dz.style.background = ''; ltAddFiles(e.dataTransfer.files); };
-    cb.onclick = () => { ltFiles = []; ltRender(); };
-  });
-})();
+    // --- .lottie 변환기 ---
+    (function () {
+      function crc32(buf) {
+        const t = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) { let c = i; for (let j = 0; j < 8; j++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[i] = c; }
+        let crc = 0xffffffff;
+        for (let i = 0; i < buf.length; i++) crc = t[(crc ^ buf[i]) & 0xff] ^ (crc >>> 8);
+        return (crc ^ 0xffffffff) >>> 0;
+      }
+      function createZip(files) {
+        const entries = []; let offset = 0; const locals = [];
+        for (const f of files) {
+          const nb = new TextEncoder().encode(f.name);
+          const crc = crc32(f.data); const rawSz = f.data.length;
+          const compressed = pako.deflateRaw(f.data, { level: 9 });
+          const compSz = compressed.length;
+          const hdr = new Uint8Array(30 + nb.length + compSz);
+          const v = new DataView(hdr.buffer);
+          v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(6, 0, true);
+          v.setUint16(8, 8, true); v.setUint16(10, 0, true); v.setUint16(12, 0, true);
+          v.setUint32(14, crc, true); v.setUint32(18, compSz, true); v.setUint32(22, rawSz, true);
+          v.setUint16(26, nb.length, true); v.setUint16(28, 0, true);
+          hdr.set(nb, 30); hdr.set(compressed, 30 + nb.length);
+          entries.push({ nb, crc, rawSz, compSz, offset }); locals.push(hdr); offset += hdr.length;
+        }
+        const centrals = [];
+        for (const e of entries) {
+          const c = new Uint8Array(46 + e.nb.length); const v = new DataView(c.buffer);
+          v.setUint32(0, 0x02014b50, true); v.setUint16(4, 20, true); v.setUint16(6, 20, true);
+          v.setUint16(8, 0, true); v.setUint16(10, 8, true); v.setUint16(12, 0, true); v.setUint16(14, 0, true);
+          v.setUint32(16, e.crc, true); v.setUint32(20, e.compSz, true); v.setUint32(24, e.rawSz, true);
+          v.setUint16(28, e.nb.length, true); v.setUint32(42, e.offset, true); c.set(e.nb, 46); centrals.push(c);
+        }
+        const csz = centrals.reduce((s, c) => s + c.length, 0);
+        const eocdr = new Uint8Array(22); const ev = new DataView(eocdr.buffer);
+        ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, entries.length, true);
+        ev.setUint16(10, entries.length, true); ev.setUint32(12, csz, true); ev.setUint32(16, offset, true);
+        const total = new Uint8Array(offset + csz + 22); let p = 0;
+        for (const l of locals) { total.set(l, p); p += l.length; }
+        for (const c of centrals) { total.set(c, p); p += c.length; }
+        total.set(eocdr, p); return total;
+      }
+      function jsonToDotLottie(jsonStr, id) {
+        const enc = new TextEncoder();
+        const manifest = JSON.stringify({ generator: "json-to-lottie-converter", version: "1.0", animations: [{ id, speed: 1, loop: true, autoplay: true }] });
+        return createZip([{ name: "manifest.json", data: enc.encode(manifest) }, { name: `animations/${id}.json`, data: enc.encode(jsonStr) }]);
+      }
+      function fmtSize(b) {
+        if (b < 1024) return b + " B";
+        if (b < 1024 * 1024) return (b / 1024).toFixed(1) + " KB";
+        return (b / (1024 * 1024)).toFixed(1) + " MB";
+      }
+      function ltDownload(blob, name) {
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href);
+      }
+      function bundleZip(fileList) {
+        return Promise.all(fileList.map(f => f.blob.arrayBuffer().then(buf => ({ name: f.outName, data: new Uint8Array(buf) })))).then(zf => {
+          const entries = []; let offset = 0; const locals = [];
+          for (const f of zf) {
+            const nb = new TextEncoder().encode(f.name); const crc = crc32(f.data); const sz = f.data.length;
+            const hdr = new Uint8Array(30 + nb.length + sz); const v = new DataView(hdr.buffer);
+            v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(8, 0, true);
+            v.setUint32(14, crc, true); v.setUint32(18, sz, true); v.setUint32(22, sz, true); v.setUint16(26, nb.length, true);
+            hdr.set(nb, 30); hdr.set(f.data, 30 + nb.length); entries.push({ nb, crc, sz, offset }); locals.push(hdr); offset += hdr.length;
+          }
+          const centrals = [];
+          for (const e of entries) {
+            const c = new Uint8Array(46 + e.nb.length); const v = new DataView(c.buffer);
+            v.setUint32(0, 0x02014b50, true); v.setUint16(4, 20, true); v.setUint16(6, 20, true);
+            v.setUint32(16, e.crc, true); v.setUint32(20, e.sz, true); v.setUint32(24, e.sz, true);
+            v.setUint16(28, e.nb.length, true); v.setUint32(42, e.offset, true); c.set(e.nb, 46); centrals.push(c);
+          }
+          const csz = centrals.reduce((s, c) => s + c.length, 0);
+          const eocdr = new Uint8Array(22); const ev = new DataView(eocdr.buffer);
+          ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, entries.length, true);
+          ev.setUint16(10, entries.length, true); ev.setUint32(12, csz, true); ev.setUint32(16, offset, true);
+          const total = new Uint8Array(offset + csz + 22); let p = 0;
+          for (const l of locals) { total.set(l, p); p += l.length; }
+          for (const c of centrals) { total.set(c, p); p += c.length; }
+          total.set(eocdr, p); return new Blob([total], { type: "application/zip" });
+        });
+      }
 
-// --- PNG 압축기 ---
-(function() {
-  const WASM_JS_URL  = 'https://cdn.jsdelivr.net/npm/@fe-daily/libimagequant-wasm@0.1.1/dist/wasm/libimagequant_wasm.js';
-  const WASM_BIN_URL = 'https://cdn.jsdelivr.net/npm/@fe-daily/libimagequant-wasm@0.1.1/dist/wasm/libimagequant_wasm_bg.wasm';
+      let ltFiles = []; let ltIdCounter = 0; let ltBatchIndex = 0; const LT_BATCH = 10; let ltBatchRunning = false;
 
-  let pngWasm = null;
-  let pngFiles = [];
-  let pngResults = [];
+      function ltRender() {
+        const listArea = document.getElementById('lt-listArea');
+        const fileList = document.getElementById('lt-fileList');
+        const actionsDiv = document.getElementById('lt-actions');
+        const countLabel = document.getElementById('lt-countLabel');
+        if (!listArea) return;
+        listArea.style.display = ltFiles.length ? '' : 'none';
+        const done = ltFiles.filter(f => f.status === 'done').length;
+        const downloaded = ltFiles.filter(f => f.status === 'downloaded').length;
+        const pending = ltFiles.filter(f => f.status === 'pending').length;
+        const doneTotal = done + downloaded;
+        let label = ltFiles.length + '개 파일';
+        if (doneTotal > 0) label += ' · ' + doneTotal + '개 변환됨';
+        if (downloaded > 0) label += ' · ' + downloaded + '개 다운로드됨';
+        countLabel.textContent = label;
+        fileList.innerHTML = '';
+        let num = 0;
+        for (const f of ltFiles) {
+          num++;
+          const div = document.createElement('div');
+          div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg3);transition:all .2s';
+          if (f.status === 'done') div.style.background = 'rgba(16,185,129,0.06)', div.style.borderColor = 'rgba(16,185,129,0.2)', div.style.cursor = 'pointer';
+          if (f.status === 'downloaded') div.style.background = 'rgba(99,102,241,0.06)', div.style.borderColor = 'rgba(99,102,241,0.15)', div.style.opacity = '0.7', div.style.cursor = 'pointer';
+          const icon = f.status === 'downloaded' ? '↓' : f.status === 'done' ? '✓' : f.status === 'error' ? '✗' : '◇';
+          const statusColor = { pending: 'var(--text3)', done: '#10b981', downloaded: '#6366f1', error: '#ef4444' }[f.status];
+          const statusLabel = { pending: '대기 중', done: '완료', downloaded: '다운로드됨', error: '오류' }[f.status];
+          div.innerHTML = `<span style="font-size:11px;color:var(--text3);font-weight:600;min-width:20px;text-align:right">${num}</span><span style="font-size:16px;opacity:0.7">${icon}</span><div style="flex:1;min-width:0"><div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</div><div style="font-size:11px;color:var(--text3)">${f.size}${f.outSize ? ' → ' + f.outSize : ''}</div></div><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:${statusColor};flex-shrink:0">${statusLabel}</span>`;
+          if (f.status === 'pending') {
+            const btn = document.createElement('button');
+            btn.style.cssText = 'background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px';
+            btn.textContent = '×';
+            btn.onclick = (e) => { e.stopPropagation(); ltFiles = ltFiles.filter(x => x.id !== f.id); ltRender(); };
+            div.appendChild(btn);
+          }
+          if (f.status === 'done' || f.status === 'downloaded') div.onclick = () => { ltDownload(f.blob, f.outName); f.status = 'downloaded'; ltRender(); };
+          fileList.appendChild(div);
+        }
+        actionsDiv.innerHTML = '';
+        if (pending > 0) {
+          const btn = document.createElement('button');
+          btn.style.cssText = 'flex:1;padding:12px;border-radius:var(--radius-md);border:none;background:linear-gradient(135deg,#06b6d4,#8b5cf6);color:#fff;font-size:14px;font-weight:600;cursor:pointer';
+          btn.textContent = pending + '개 파일 변환';
+          btn.onclick = ltConvert;
+          actionsDiv.appendChild(btn);
+        }
+        if (doneTotal > 0) {
+          const btnAll = document.createElement('button');
+          btnAll.style.cssText = 'flex:1;padding:12px;border-radius:var(--radius-md);border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#10b981;font-size:14px;font-weight:600;cursor:pointer';
+          btnAll.textContent = '전체 ZIP (' + doneTotal + '개)';
+          btnAll.onclick = () => {
+            const df = ltFiles.filter(f => (f.status === 'done' || f.status === 'downloaded') && f.blob);
+            if (df.length === 1) { ltDownload(df[0].blob, df[0].outName); return; }
+            bundleZip(df).then(blob => ltDownload(blob, 'lottie_files.zip'));
+          };
+          actionsDiv.appendChild(btnAll);
+        }
+      }
 
-  async function loadPngWasm() {
-    if (pngWasm) return pngWasm;
-    setStatus('WASM 로딩 중...');
-    const jsRes  = await fetch(WASM_JS_URL);
-    const jsText = await jsRes.text();
-    const wasmRes = await fetch(WASM_BIN_URL);
-    const wasmBuf = await wasmRes.arrayBuffer();
-    const blob    = new Blob([jsText], { type: 'application/javascript' });
-    const blobUrl = URL.createObjectURL(blob);
-    const mod = await import(blobUrl);
-    await mod.default(wasmBuf);
-    pngWasm = mod;
-    setStatus('');
-    return pngWasm;
-  }
+      async function ltConvert() {
+        ltBatchIndex = 0;
+        const pending = ltFiles.filter(f => f.status === 'pending');
+        for (const item of pending) {
+          try {
+            const text = await item.file.text();
+            JSON.parse(text);
+            const base = item.name.replace(/\.json$/i, '');
+            const animId = base.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const zip = jsonToDotLottie(text, animId);
+            item.blob = new Blob([zip], { type: 'application/zip' });
+            item.outName = base + '.lottie';
+            const ratio = Math.round(zip.length / item.file.size * 100);
+            item.outSize = fmtSize(zip.length) + ' (' + ratio + '%)';
+            item.status = 'done';
+          } catch (e) { item.status = 'error'; }
+          ltRender();
+          await new Promise(r => setTimeout(r, 50));
+        }
+      }
 
-  async function compressFile(file, quality) {
-    const w = await loadPngWasm();
-    const pngBuffer = new Uint8Array(await file.arrayBuffer());
-    const decoded = w.decode_png_to_rgba(pngBuffer);
-    const [rgbaData, width, height] = decoded;
-    const q = new w.ImageQuantizer();
-    q.setQuality(0, quality); q.setSpeed(3); q.setMaxColors(256);
-    const qr = q.quantizeImage(rgbaData, width, height);
-    qr.setDithering(1.0);
-    const palette = qr.getPalette();
-    const indices = qr.getPaletteIndices(rgbaData, width, height);
-    const png = w.encode_palette_to_png(indices, palette, width, height);
-    return new Blob([png], { type: 'image/png' });
-  }
+      function ltAddFiles(list) {
+        for (const f of list) {
+          if (!f.name.endsWith('.json')) continue;
+          ltFiles.push({ id: ++ltIdCounter, name: f.name, file: f, size: fmtSize(f.size), status: 'pending', blob: null, outName: '' });
+        }
+        ltRender();
+      }
 
-  function fmtSize(b) {
-    if (b < 1024) return b + ' B';
-    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-    return (b/1048576).toFixed(2) + ' MB';
-  }
+      window.addEventListener('DOMContentLoaded', () => {
+        const dz = document.getElementById('lt-dropzone');
+        const fi = document.getElementById('lt-fileInput');
+        const cb = document.getElementById('lt-clearBtn');
+        if (!dz) return;
+        dz.onclick = () => fi.click();
+        fi.onchange = (e) => { ltAddFiles(e.target.files); e.target.value = ''; };
+        dz.ondragover = (e) => { e.preventDefault(); dz.style.borderColor = 'var(--accent)'; dz.style.background = 'var(--accent-bg)'; };
+        dz.ondragleave = () => { dz.style.borderColor = ''; dz.style.background = ''; };
+        dz.ondrop = (e) => { e.preventDefault(); dz.style.borderColor = ''; dz.style.background = ''; ltAddFiles(e.dataTransfer.files); };
+        cb.onclick = () => { ltFiles = []; ltRender(); };
+      });
+    })();
 
-  function setStatus(msg) {
-    const el = document.getElementById('png-status');
-    if (el) el.textContent = msg;
-  }
+    // --- PNG 압축기 ---
+    (function () {
+      const WASM_JS_URL = 'https://cdn.jsdelivr.net/npm/@fe-daily/libimagequant-wasm@0.1.1/dist/wasm/libimagequant_wasm.js';
+      const WASM_BIN_URL = 'https://cdn.jsdelivr.net/npm/@fe-daily/libimagequant-wasm@0.1.1/dist/wasm/libimagequant_wasm_bg.wasm';
 
-  function getQuality() {
-    const unlock = document.getElementById('png-unlock')?.checked;
-    const val = parseInt(document.getElementById('png-quality')?.value) || 80;
-    return unlock ? val : Math.max(val, 80);
-  }
+      let pngWasm = null;
+      let pngFiles = [];
+      let pngResults = [];
 
-  function renderResults() {
-    const el = document.getElementById('png-results');
-    if (!el) return;
-    if (!pngResults.length) { el.innerHTML = ''; return; }
-    const doneCount = pngResults.filter(r => !r.error).length;
-    el.innerHTML = `
+      async function loadPngWasm() {
+        if (pngWasm) return pngWasm;
+        setStatus('WASM 로딩 중...');
+        const jsRes = await fetch(WASM_JS_URL);
+        const jsText = await jsRes.text();
+        const wasmRes = await fetch(WASM_BIN_URL);
+        const wasmBuf = await wasmRes.arrayBuffer();
+        const blob = new Blob([jsText], { type: 'application/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+        const mod = await import(blobUrl);
+        await mod.default(wasmBuf);
+        pngWasm = mod;
+        setStatus('');
+        return pngWasm;
+      }
+
+      async function compressFile(file, quality) {
+        const w = await loadPngWasm();
+        const canvas = document.createElement('canvas');
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = url; });
+        URL.revokeObjectURL(url);
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+        const maxColors = Math.max(2, Math.floor(256 * (quality / 100)));
+        const quantizer = new w.ImageQuantizer({ wasmModule: w });
+        const quantized = await quantizer.quantizeImageData(imageData, {
+          maxColors,
+          speed: 1,
+          quality: { min: 0, target: quality }
+        });
+        return new Blob([quantized.pngBytes], { type: 'image/png' });
+      }
+
+      function fmtSize(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+        return (b / 1048576).toFixed(2) + ' MB';
+      }
+
+      function setStatus(msg) {
+        const el = document.getElementById('png-status');
+        if (el) el.textContent = msg;
+      }
+
+      function getQuality() {
+        const unlock = document.getElementById('png-unlock')?.checked;
+        const val = parseInt(document.getElementById('png-quality')?.value) || 80;
+        return unlock ? val : Math.max(val, 80);
+      }
+
+      function renderResults() {
+        const el = document.getElementById('png-results');
+        if (!el) return;
+        if (!pngResults.length) { el.innerHTML = ''; return; }
+        const doneCount = pngResults.filter(r => !r.error).length;
+        el.innerHTML = `
       <div class="card" style="overflow:hidden;padding:0">
         <div style="display:grid;grid-template-columns:1fr 130px 70px 50px;gap:8px;padding:8px 14px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)">
           <span>파일명</span><span>원본 → 압축</span><span>압축률</span><span></span>
         </div>
-        ${pngResults.map((r,i) => `
+        ${pngResults.map((r, i) => `
           <div style="display:grid;grid-template-columns:1fr 130px 70px 50px;gap:8px;padding:10px 14px;font-size:12px;align-items:center;border-bottom:1px solid var(--border)">
             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${r.name}</span>
             ${r.error
-              ? `<span style="grid-column:span 3;color:#ef4444">압축 실패</span>`
-              : `<span style="color:var(--text3)">${fmtSize(r.origSize)} → ${fmtSize(r.newSize)}</span>
-                 <span style="color:#10b981;font-weight:600">-${((r.origSize-r.newSize)/r.origSize*100).toFixed(1)}%</span>
+            ? `<span style="grid-column:span 3;color:#ef4444">압축 실패</span>`
+            : `<span style="color:var(--text3)">${fmtSize(r.origSize)} → ${fmtSize(r.newSize)}</span>
+                 <span style="color:#10b981;font-weight:600">-${((r.origSize - r.newSize) / r.origSize * 100).toFixed(1)}%</span>
                  <button onclick="pngDownload(${i})" style="padding:4px 8px;font-size:11px;font-weight:600;background:var(--accent-bg);color:var(--accent);border:none;border-radius:6px;cursor:pointer">저장</button>`
-            }
+          }
           </div>
         `).join('')}
         ${doneCount > 1 ? `
@@ -1534,93 +2158,94 @@ function resetStorage() {
             <button onclick="pngDownloadAll()" style="width:100%;padding:10px;border-radius:var(--radius-md);border:none;background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff;font-size:13px;font-weight:600;cursor:pointer">전체 저장 (${doneCount}개)</button>
           </div>` : ''}
       </div>`;
-  }
-
-  window.pngDownload = function(i) {
-    const r = pngResults[i];
-    if (!r?.blob) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(r.blob);
-    a.download = r.name.replace('.png', '_compressed.png');
-    a.click();
-  };
-
-  window.pngDownloadAll = function() {
-    pngResults.filter(r => r.blob).forEach(r => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(r.blob);
-      a.download = r.name.replace('.png', '_compressed.png');
-      a.click();
-    });
-  };
-
-  function addFiles(list) {
-    const pngs = [...list].filter(f => f.type === 'image/png');
-    pngFiles = [...pngFiles, ...pngs];
-    const btn = document.getElementById('png-compress-btn');
-    if (btn) {
-      btn.disabled = pngFiles.length === 0;
-      btn.style.opacity = pngFiles.length ? '1' : '0.5';
-      btn.textContent = pngFiles.length ? `압축 시작 (${pngFiles.length}개)` : '압축 시작';
-    }
-    pngResults = [];
-    renderResults();
-  }
-
-  // 슬라이더 동기화
-  window.addEventListener('DOMContentLoaded', () => {
-    const dz      = document.getElementById('png-dropzone');
-    const fi      = document.getElementById('png-fileInput');
-    const slider  = document.getElementById('png-slider');
-    const numInp  = document.getElementById('png-quality');
-    const unlock  = document.getElementById('png-unlock');
-    const btn     = document.getElementById('png-compress-btn');
-    if (!dz) return;
-
-    dz.onclick = () => fi.click();
-    fi.onchange = e => { addFiles(e.target.files); e.target.value = ''; };
-    dz.ondragover  = e => { e.preventDefault(); dz.style.borderColor = 'var(--accent)'; dz.style.background = 'var(--accent-bg)'; };
-    dz.ondragleave = () => { dz.style.borderColor = ''; dz.style.background = ''; };
-    dz.ondrop = e => { e.preventDefault(); dz.style.borderColor = ''; dz.style.background = ''; addFiles(e.dataTransfer.files); };
-
-    slider.addEventListener('input', () => {
-      const v = unlock.checked ? parseInt(slider.value) : Math.max(parseInt(slider.value), 80);
-      slider.value = v; numInp.value = v;
-    });
-    numInp.addEventListener('input', () => {
-      const v = Math.min(100, Math.max(1, parseInt(numInp.value)||1));
-      const c = unlock.checked ? v : Math.max(v, 80);
-      numInp.value = c; slider.value = c;
-    });
-    unlock.addEventListener('change', () => {
-      if (!unlock.checked) {
-        const c = Math.max(parseInt(numInp.value), 80);
-        numInp.value = c; slider.value = c;
       }
-    });
 
-    btn.addEventListener('click', async () => {
-      if (!pngFiles.length) return;
-      btn.disabled = true; btn.style.opacity = '0.5';
-      pngResults = []; renderResults();
-      for (let i = 0; i < pngFiles.length; i++) {
-        const file = pngFiles[i];
-        setStatus(`압축 중... (${i+1}/${pngFiles.length})`);
-        try {
-          const blob = await compressFile(file, getQuality());
-          pngResults.push({ name: file.name, origSize: file.size, newSize: blob.size, blob });
-        } catch(e) {
-          pngResults.push({ name: file.name, error: true });
+      window.pngDownload = function (i) {
+        const r = pngResults[i];
+        if (!r?.blob) return;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(r.blob);
+        a.download = r.name.replace('.png', '_compressed.png');
+        a.click();
+      };
+
+      window.pngDownloadAll = function () {
+        pngResults.filter(r => r.blob).forEach(r => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(r.blob);
+          a.download = r.name.replace('.png', '_compressed.png');
+          a.click();
+        });
+      };
+
+      function addFiles(list) {
+        const pngs = [...list].filter(f => f.type === 'image/png');
+        pngFiles = [...pngFiles, ...pngs];
+        const btn = document.getElementById('png-compress-btn');
+        if (btn) {
+          btn.disabled = pngFiles.length === 0;
+          btn.style.opacity = pngFiles.length ? '1' : '0.5';
+          btn.textContent = pngFiles.length ? `압축 시작 (${pngFiles.length}개)` : '압축 시작';
         }
+        pngResults = [];
         renderResults();
       }
-      setStatus(`완료! ${pngResults.filter(r=>!r.error).length}개 압축됨`);
-      pngFiles = [];
-      btn.textContent = '압축 시작';
-    });
-  });
-})();
 
-</script>
+      // 슬라이더 동기화
+      window.addEventListener('DOMContentLoaded', () => {
+        const dz = document.getElementById('png-dropzone');
+        const fi = document.getElementById('png-fileInput');
+        const slider = document.getElementById('png-slider');
+        const numInp = document.getElementById('png-quality');
+        const unlock = document.getElementById('png-unlock');
+        const btn = document.getElementById('png-compress-btn');
+        if (!dz) return;
+
+        dz.onclick = () => fi.click();
+        fi.onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+        dz.ondragover = e => { e.preventDefault(); dz.style.borderColor = 'var(--accent)'; dz.style.background = 'var(--accent-bg)'; };
+        dz.ondragleave = () => { dz.style.borderColor = ''; dz.style.background = ''; };
+        dz.ondrop = e => { e.preventDefault(); dz.style.borderColor = ''; dz.style.background = ''; addFiles(e.dataTransfer.files); };
+
+        slider.addEventListener('input', () => {
+          const v = unlock.checked ? parseInt(slider.value) : Math.max(parseInt(slider.value), 80);
+          slider.value = v; numInp.value = v;
+        });
+        numInp.addEventListener('input', () => {
+          const v = Math.min(100, Math.max(1, parseInt(numInp.value) || 1));
+          const c = unlock.checked ? v : Math.max(v, 80);
+          numInp.value = c; slider.value = c;
+        });
+        unlock.addEventListener('change', () => {
+          if (!unlock.checked) {
+            const c = Math.max(parseInt(numInp.value), 80);
+            numInp.value = c; slider.value = c;
+          }
+        });
+
+        btn.addEventListener('click', async () => {
+          if (!pngFiles.length) return;
+          btn.disabled = true; btn.style.opacity = '0.5';
+          pngResults = []; renderResults();
+          for (let i = 0; i < pngFiles.length; i++) {
+            const file = pngFiles[i];
+            setStatus(`압축 중... (${i + 1}/${pngFiles.length})`);
+            try {
+              const blob = await compressFile(file, getQuality());
+              pngResults.push({ name: file.name, origSize: file.size, newSize: blob.size, blob });
+            } catch (e) {
+              pngResults.push({ name: file.name, error: true });
+            }
+            renderResults();
+          }
+          setStatus(`완료! ${pngResults.filter(r => !r.error).length}개 압축됨`);
+          pngFiles = [];
+          btn.textContent = '압축 시작';
+        });
+      });
+    })();
+
+  </script>
 </body>
+
 </html>
