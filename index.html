@@ -2109,7 +2109,7 @@
         setStatus('');
         return pngWasm;
       }
-
+      console.log('압축 시작:', filesToCompress.length, filesToCompress);
       async function compressFile(file, quality) {
         const w = await loadPngWasm();
         const pngBuffer = new Uint8Array(await file.arrayBuffer());
