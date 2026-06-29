@@ -2109,7 +2109,7 @@
         setStatus('');
         return pngWasm;
       }
-      console.log('압축 시작:', filesToCompress.length, filesToCompress);
+
       async function compressFile(file, quality) {
         const w = await loadPngWasm();
         const pngBuffer = new Uint8Array(await file.arrayBuffer());
@@ -2289,6 +2289,7 @@
           document.getElementById('png-listArea').style.display = 'none';
           const filesToCompress = [...pngFiles];
           pngFiles = [];
+          console.log('압축 시작:', filesToCompress.length, filesToCompress);
           for (let i = 0; i < filesToCompress.length; i++) {
             const file = filesToCompress[i];
             setStatus(`압축 중... (${i + 1}/${filesToCompress.length})`);
