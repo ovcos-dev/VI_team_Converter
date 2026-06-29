@@ -1239,6 +1239,12 @@ loadFromStorage();
 
 function resetStorage() {
   removeStorage(LS_KEY);
+  // 탭 설정 초기화
+  removeStorage('vi_tab_order');
+  removeStorage('vi_tab_hidden');
+  removeStorage('vi_last_tab');
+  tabOrder = ALL_TABS.map(t => t.tab);
+  hiddenTabs = ['frame', 'color', 'speed', 'mm'];
   const defaults = {
     'server-mac': 'trplsrv',
     'work-in': '09:00',
@@ -1254,6 +1260,8 @@ function resetStorage() {
   });
   calcPath();
   calcWork();
+  renderNav();
+  switchTab('path');
   alert('기본값으로 초기화됐어요.');
 }
 
